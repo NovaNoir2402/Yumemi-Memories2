@@ -11,7 +11,7 @@ This is a simple game project using Babylon.js, TypeScript, and Webpack.
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/TienTKM/Web3DGame.git
+    git clone https://github.com/TienTKM/Yumemi-Memories.git
     ```
 
 2. Install the dependencies:
