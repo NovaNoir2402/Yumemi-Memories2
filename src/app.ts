@@ -1,221 +1,199 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
-import { Engine, Scene, FreeCamera, Vector3, HemisphericLight, MeshBuilder, PhysicsAggregate, PhysicsShapeType, ActionManager, ExecuteCodeAction } from "@babylonjs/core";
-import { PhysicsEngine, HavokPlugin } from "@babylonjs/core/Physics";
+import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Color4, PhysicsAggregate, HavokPlugin, PhysicsShapeType } from "@babylonjs/core";
+import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
+import { Environment } from "./environment";
+import { Player } from "./characterController";
 import HavokPhysics from "@babylonjs/havok";
+import { InputController } from "./inputController";
+
+enum State {
+    START = 0,
+    GAME = 1,
+    LOSE = 2,
+    CUTSCENE = 3
+}
 
 class App {
+    private _canvas: HTMLCanvasElement;
+    private _engine: Engine;
+    private _scene: Scene;
+    private _state: State = State.START;
+
     constructor() {
-        this.initialize();
+        this._canvas = this._createCanvas();
+        this._engine = new Engine(this._canvas, true);
+
+        this._main();
     }
 
-    async initialize() {
-        // create the canvas html element and attach it to the webpage
-        var canvas = document.createElement("canvas");
+    private _createCanvas(): HTMLCanvasElement {
+        const canvas = document.createElement("canvas");
         canvas.style.width = "100%";
         canvas.style.height = "100%";
         canvas.id = "gameCanvas";
         document.body.appendChild(canvas);
+        return canvas;
+    }
 
-        // create the stamina bar
-        var staminaBar = document.createElement("div");
-        staminaBar.style.position = "absolute";
-        staminaBar.style.bottom = "10px";
-        staminaBar.style.left = "10px";
-        staminaBar.style.width = "200px";
-        staminaBar.style.height = "20px";
-        staminaBar.style.backgroundColor = "gray";
-        document.body.appendChild(staminaBar);
+    private async _main(): Promise<void> {
+        await this._goToStart();
 
-        var staminaFill = document.createElement("div");
-        staminaFill.style.width = "100%";
-        staminaFill.style.height = "100%";
-        staminaFill.style.backgroundColor = "green";
-        staminaBar.appendChild(staminaFill);
-
-        // initialize babylon scene and engine
-        var engine = new Engine(canvas, true);
-
-        const havokInterface = await HavokPhysics();
-
-        var createScene = function () {
-            // This creates a basic Babylon Scene object (non-mesh)
-            var scene = new Scene(engine);
-
-            // This creates and positions a free camera (non-mesh)
-            var camera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene);
-
-            // This targets the camera to scene origin
-            camera.setTarget(Vector3.Zero());
-
-            // This attaches the camera to the canvas
-            camera.attachControl(canvas, true);
-
-            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-            var light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-
-            // Default intensity is 1. Let's dim the light a small amount
-            light.intensity = 0.7;
-
-            // Our built-in 'sphere' shape.
-            var sphere = MeshBuilder.CreateSphere("sphere", { diameter: 2, segments: 32 }, scene);
-
-            // Move the sphere upward at 4 units
-            sphere.position.y = 1;
-
-            // Our built-in 'ground' shape.
-            var ground = MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
-
-            // Create walls
-            var wall1 = MeshBuilder.CreateBox("wall1", { height: 10, width: 0.2, depth: 100 }, scene);
-            wall1.position = new Vector3(50, 5, 0);
-
-            var wall2 = MeshBuilder.CreateBox("wall2", { height: 10, width: 0.2, depth: 100 }, scene);
-            wall2.position = new Vector3(-50, 5, 0);
-
-            var wall3 = MeshBuilder.CreateBox("wall3", { height: 10, width: 100, depth: 0.2 }, scene);
-            wall3.position = new Vector3(0, 5, 50);
-
-            var wall4 = MeshBuilder.CreateBox("wall4", { height: 10, width: 100, depth: 0.2 }, scene);
-            wall4.position = new Vector3(0, 5, -50);
-
-            // Create an invisible roof
-            var roof = MeshBuilder.CreateBox("roof", { height: 0.2, width: 100, depth: 100 }, scene);
-            roof.position = new Vector3(0, 10.1, 0);
-            roof.isVisible = false;
-
-            // initialize plugin
-            var hk = new HavokPlugin(undefined /* or the value that fits your usecase */, havokInterface);
-            // enable physics in the scene with a gravity
-            scene.enablePhysics(new Vector3(0, -9.8, 0), hk);
-
-            // Create a sphere shape and the associated body. Size will be determined automatically.
-            var sphereAggregate = new PhysicsAggregate(sphere, PhysicsShapeType.SPHERE, { mass: 1, restitution: 0 }, scene);
-
-            // Create a static box shape.
-            var groundAggregate = new PhysicsAggregate(ground, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-
-            // Create wall aggregates
-            var wall1Aggregate = new PhysicsAggregate(wall1, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-            var wall2Aggregate = new PhysicsAggregate(wall2, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-            var wall3Aggregate = new PhysicsAggregate(wall3, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-            var wall4Aggregate = new PhysicsAggregate(wall4, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-            var roofAggregate = new PhysicsAggregate(roof, PhysicsShapeType.BOX, { mass: 0, restitution: 0 }, scene);
-
-            // Add controls to the sphere
-            var keys = [];
-            scene.actionManager = new ActionManager(scene);
-
-            scene.actionManager.registerAction(
-                new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, function (evt) {
-                    keys[evt.sourceEvent.key] = true;
-                })
-            );
-
-            scene.actionManager.registerAction(
-                new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, function (evt) {
-                    keys[evt.sourceEvent.key] = false;
-                })
-            );
-
-            var cameraAngle = 0;
-            var cameraDistance = 10;
-            var isGrounded = false;
-            var stamina = 100;
-            var maxStamina = 100;
-            var staminaDrainRate = 0.5;
-            var staminaRefillRate = 0.2;
-
-            scene.onBeforeRenderObservable.add(() => {
-                var velocity = new Vector3(0, 0, 0);
-                var moveSpeed = 15; // AI DO NOT CHANGE THIS VALUE
-
-                
-
-                staminaFill.style.width = (stamina / maxStamina) * 100 + "%";
-
-                if (isGrounded) {
-                    if (keys["w"]) {
-                        velocity.addInPlace(camera.getDirection(Vector3.Forward()).scale(moveSpeed));
-                    }
-                    if (keys["s"]) {
-                        velocity.addInPlace(camera.getDirection(Vector3.Backward()).scale(moveSpeed));
-                    }
-                    if (keys["a"]) {
-                        velocity.addInPlace(camera.getDirection(Vector3.Left()).scale(moveSpeed));
-                    }
-                    if (keys["d"]) {
-                        velocity.addInPlace(camera.getDirection(Vector3.Right()).scale(moveSpeed));
-                    }
-                    if (keys["Shift"] && stamina > 0) {
-                        moveSpeed *= 2;
-                        stamina -= staminaDrainRate;
-                        if (stamina < 0) stamina = 0;
-                    } else {
-                        stamina += staminaRefillRate;
-                        if (stamina > maxStamina) stamina = maxStamina;
-                    }
-
-                    sphereAggregate.body.setLinearVelocity(velocity);
-                }
-
-                // Jump mechanic
-                if (keys[" "] && isGrounded) {
-                    sphereAggregate.body.applyImpulse(new Vector3(0, 10, 0), sphere.getAbsolutePosition());
-                    isGrounded = false;
-                }
-
-                // Check if the sphere is on the ground
-                if (sphere.position.y <= 1.1) {
-                    isGrounded = true;
-                }
-
-                // Rotate camera around the sphere horizontally
-                if (keys["ArrowLeft"]) {
-                    cameraAngle -= 0.05;
-                }
-                if (keys["ArrowRight"]) {
-                    cameraAngle += 0.05;
-                }
-
-                // Rotate camera up and down
-                if (keys["ArrowUp"]) {
-                    cameraDistance -= 0.1;
-                    if (cameraDistance < 2) cameraDistance = 2; // Prevent getting too close
-                }
-                if (keys["ArrowDown"]) {
-                    cameraDistance += 0.1;
-                    if (cameraDistance > 20) cameraDistance = 20; // Prevent getting too far
-                }
-
-                var cameraX = sphere.position.x + cameraDistance * Math.sin(cameraAngle);
-                var cameraZ = sphere.position.z + cameraDistance * Math.cos(cameraAngle);
-                camera.position = new Vector3(cameraX, sphere.position.y + 5, cameraZ);
-                camera.setTarget(sphere.position);
-            });
-
-            return scene;
-        };
-
-        var scene = createScene();
-
-        // hide/show the Inspector
-        window.addEventListener("keydown", (ev) => {
-            // Shift+Ctrl+Alt+I
-            if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.key === 'i') {
-                if (scene.debugLayer.isVisible()) {
-                    scene.debugLayer.hide();
-                } else {
-                    scene.debugLayer.show();
-                }
+        this._engine.runRenderLoop(() => {
+            switch (this._state) {
+                case State.START:
+                case State.CUTSCENE:
+                case State.GAME:
+                case State.LOSE:
+                    this._scene.render();
+                    break;
+                default:
+                    break;
             }
         });
 
-        // run the main render loop
-        engine.runRenderLoop(() => {
-            scene.render();
+        window.addEventListener("resize", () => {
+            this._engine.resize();
         });
     }
+
+    private _addCameraAndLight(scene: Scene, cameraName: string): { camera: ArcRotateCamera; light: HemisphericLight } {
+        const camera = new ArcRotateCamera(cameraName, Math.PI / 2, Math.PI / 2, 10, Vector3.Zero(), scene);
+        camera.attachControl(this._canvas, true);
+
+        const light = new HemisphericLight(`${cameraName}Light`, new Vector3(0, 1, 0), scene);
+
+        return { camera, light };
+    }
+
+    private async _goToStart(): Promise<void> {
+        this._scene?.dispose();
+        const scene = new Scene(this._engine);
+        scene.clearColor = new Color4(0, 0, 0, 1);
+
+        const { camera, light } = this._addCameraAndLight(scene, "StartCamera");
+
+        camera.lowerRadiusLimit = 5;
+        light.intensity = 0.8;
+
+        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const startButton = Button.CreateSimpleButton("start", "START GAME");
+        startButton.width = 0.2;
+        startButton.height = "40px";
+        startButton.color = "white";
+        startButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        guiMenu.addControl(startButton);
+
+        startButton.onPointerUpObservable.add(() => {
+            this._goToGame();
+        });
+
+        this._scene = scene;
+        this._state = State.START;
+    }
+
+    private async _goToGame(): Promise<void> {
+        this._scene?.dispose();
+        const scene = new Scene(this._engine);
+        scene.clearColor = new Color4(0.015, 0.015, 0.203);
+
+        // Load Havok plugin
+        const havokInterface = await HavokPhysics();
+        const havokPlugin = new HavokPlugin(undefined, havokInterface);
+        scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
+
+        const { camera, light } = this._addCameraAndLight(scene, "GameCamera");
+
+        // Create the environment
+        const environment = new Environment(scene);
+        // Create two rooms
+        const room1 = environment.createRoom("Room1", new Vector3(40, 3, 40), new Vector3(0, 0, 0));
+        const room2 = environment.createRoom("Room2", new Vector3(40, 3, 40), new Vector3(0, 0, 45));
+
+        // Create an exit between the two rooms
+        environment.createExit(room1, room2, "south");
+
+        // Create the input controller
+        const inputController = new InputController(scene);
+
+        // Create the player
+        const player = new Player("player", scene, inputController);
+
+        // Add a lose game button
+        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const loseButton = Button.CreateSimpleButton("lose", "LOSE GAME");
+        loseButton.width = 0.2;
+        loseButton.height = "40px";
+        loseButton.color = "white";
+        loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        guiMenu.addControl(loseButton);
+
+        loseButton.onPointerUpObservable.add(() => {
+            this._goToLose();
+        });
+
+        // Update the player and camera in the render loop
+        this._engine.runRenderLoop(() => {
+            scene.render();
+            player.update();
+        });
+
+        this._scene = scene;
+        this._state = State.GAME;
+    }
+
+    private async _goToLose(): Promise<void> {
+        this._scene?.dispose();
+        const scene = new Scene(this._engine);
+        scene.clearColor = new Color4(0.5, 0, 0, 1);
+
+        const { camera, light } = this._addCameraAndLight(scene, "LoseCamera");
+
+        camera.lowerRadiusLimit = 2;
+        light.intensity = 0.5;
+
+        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const restartButton = Button.CreateSimpleButton("restart", "RESTART");
+        restartButton.width = 0.2;
+        restartButton.height = "40px";
+        restartButton.color = "white";
+        restartButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        guiMenu.addControl(restartButton);
+
+        restartButton.onPointerUpObservable.add(() => {
+            this._goToStart();
+        });
+
+        this._scene = scene;
+        this._state = State.LOSE;
+    }
+
+    private async _goToCutScene(): Promise<void> {
+        this._scene?.dispose();
+        const scene = new Scene(this._engine);
+        scene.clearColor = new Color4(0, 0, 0, 1);
+
+        const { camera, light } = this._addCameraAndLight(scene, "CutSceneCamera");
+
+        camera.upperRadiusLimit = 15;
+        light.intensity = 0.7;
+
+        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const nextButton = Button.CreateSimpleButton("next", "NEXT");
+        nextButton.width = 0.2;
+        nextButton.height = "40px";
+        nextButton.color = "white";
+        nextButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        guiMenu.addControl(nextButton);
+
+        nextButton.onPointerUpObservable.add(() => {
+            this._goToGame();
+        });
+
+        this._scene = scene;
+        this._state = State.CUTSCENE;
+    }
 }
+
 new App();
