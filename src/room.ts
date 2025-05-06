@@ -1,62 +1,113 @@
-import { Vector3, MeshBuilder, StandardMaterial, Color3, Scene, PhysicsAggregate, PhysicsShapeType } from "@babylonjs/core";
+import {
+    Scene,
+    Vector3,
+    MeshBuilder,
+    StandardMaterial,
+    Color3,
+    PhysicsAggregate,
+    PhysicsShapeType,
+} from "@babylonjs/core";
 import { Exit } from "./exit";
 
 export class Room {
     public name: string;
     public size: Vector3;
     public center: Vector3;
-    public position: Vector3; // Calculated based on center and size
-    private readonly _scene: Scene;
-    private _exits: { [direction: string]: Exit | null } = { north: null, south: null, east: null, west: null };
+    public position: Vector3;
+    protected readonly _scene: Scene;
+    protected _exits: { [direction: string]: Exit | null } = {
+        north: null,
+        south: null,
+        east: null,
+        west: null,
+    };
 
-    // Wall size variables
-    private readonly wallHeight: number = 10;
-    private readonly wallThickness: number = 1;
+    // Constants
+    protected static readonly WALL_HEIGHT = 10;
+    protected static readonly WALL_THICKNESS = 1;
+    protected static readonly FLOOR_THICKNESS = 0.1;
+    protected static readonly FLOOR_DEPTH_OFFSET = -0.05;
+    protected static readonly ROOF_THICKNESS = 0.1;
+    protected static readonly ROOF_HEIGHT_OFFSET = 0.05;
+    protected static readonly WALL_TRANSPARENCY = 0.5;
+    protected static readonly ROOF_TRANSPARENCY = 0.1;
+    protected static readonly FULL_OPACITY = 1;
+    protected static readonly EXIT_WIDTH = 4;
+    protected static readonly EXIT_DEPTH = 2;
 
     constructor(name: string, size: Vector3, center: Vector3, scene: Scene) {
         this.name = name;
         this.size = size;
         this.center = center;
-        this.position = center.subtract(size.scale(0.5)); // Calculate position based on center and size
+        this.position = center.subtract(size.scale(0.5));
         this._scene = scene;
 
         this._createRoomMesh();
     }
 
-    private _createRoomMesh(): void {
-        // Create the room's floor
-        const floor = MeshBuilder.CreateBox(`${this.name}_floor`, { width: this.size.x, height: 0.1, depth: this.size.z }, this._scene);
-        floor.position = this.position.add(new Vector3(this.size.x / 2, -0.05, this.size.z / 2));
-        const floorMaterial = new StandardMaterial(`${this.name}_floorMaterial`, this._scene);
-        floorMaterial.diffuseColor = new Color3(0.4, 0.6, 0.4); // Greenish
-        floor.material = floorMaterial;
-
-        floor.metadata = { isGround: true }; // Add metadata for the floor
-        new PhysicsAggregate(floor, PhysicsShapeType.BOX, { mass: 0 }, this._scene); // Add physics to the floor
-
-        // Create the room's walls
-        this._createWall("north", new Vector3(this.size.x, this.wallHeight, this.wallThickness), new Vector3(this.size.x / 2, this.wallHeight / 2, 0));
-        this._createWall("south", new Vector3(this.size.x, this.wallHeight, this.wallThickness), new Vector3(this.size.x / 2, this.wallHeight / 2, this.size.z));
-        this._createWall("east", new Vector3(this.wallThickness, this.wallHeight, this.size.z), new Vector3(this.size.x, this.wallHeight / 2, this.size.z / 2));
-        this._createWall("west", new Vector3(this.wallThickness, this.wallHeight, this.size.z), new Vector3(0, this.wallHeight / 2, this.size.z / 2));
-
-        // Create the roof
-        const roof = MeshBuilder.CreateBox(`${this.name}_roof`, { width: this.size.x, height: 0.1, depth: this.size.z }, this._scene);
-        const roofMaterial = new StandardMaterial(`${this.name}_roofMaterial`, this._scene);
-        roofMaterial.diffuseColor = new Color3(0.4, 0.4, 0.6); // Bluish
-        roof.material = roofMaterial;
-        roof.position = this.position.add(new Vector3(this.size.x / 2, this.wallHeight - 0.05, this.size.z / 2));
+    protected _createRoomMesh(): void {
+        this._createFloor();
+        this._createWalls();
+        this._createRoof();
     }
 
-    private _createWall(name: string, size: Vector3, position: Vector3): void {
-        const wall = MeshBuilder.CreateBox(`${this.name}_${name}_wall`, { width: size.x, height: size.y, depth: size.z }, this._scene);
-        wall.position = this.position.add(position);
-        const wallMaterial = new StandardMaterial(`${this.name}_${name}_wallMaterial`, this._scene);
-        wallMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5); // Gray
-        wall.material = wallMaterial;
+    protected _createFloor(): void {
+        const floor = MeshBuilder.CreateBox(
+            `${this.name}_floor`,
+            {
+                width: this.size.x,
+                height: Room.FLOOR_THICKNESS,
+                depth: this.size.z,
+            },
+            this._scene
+        );
+        floor.position = this.position.add(
+            new Vector3(this.size.x / 2, Room.FLOOR_DEPTH_OFFSET, this.size.z / 2)
+        );
+        const material = new StandardMaterial(`${this.name}_floorMaterial`, this._scene);
+        material.diffuseColor = new Color3(0.4, 0.6, 0.4);
+        floor.material = material;
+        floor.metadata = { isGround: true };
+        new PhysicsAggregate(floor, PhysicsShapeType.BOX, { mass: 0 }, this._scene);
+    }
 
-        wall.metadata = { isObstacle: true }; // Add metadata for the wall
-        new PhysicsAggregate(wall, PhysicsShapeType.BOX, { mass: 0 }, this._scene); // Add physics to the wall
+    protected _createWalls(): void {
+        this._createWall("north", new Vector3(this.size.x, Room.WALL_HEIGHT, Room.WALL_THICKNESS), new Vector3(this.size.x / 2, Room.WALL_HEIGHT / 2, 0));
+        this._createWall("south", new Vector3(this.size.x, Room.WALL_HEIGHT, Room.WALL_THICKNESS), new Vector3(this.size.x / 2, Room.WALL_HEIGHT / 2, this.size.z));
+        this._createWall("east", new Vector3(Room.WALL_THICKNESS, Room.WALL_HEIGHT, this.size.z), new Vector3(this.size.x, Room.WALL_HEIGHT / 2, this.size.z / 2));
+        this._createWall("west", new Vector3(Room.WALL_THICKNESS, Room.WALL_HEIGHT, this.size.z), new Vector3(0, Room.WALL_HEIGHT / 2, this.size.z / 2));
+    }
+
+    protected _createRoof(): void {
+        const roof = MeshBuilder.CreateBox(
+            `${this.name}_roof`,
+            {
+                width: this.size.x,
+                height: Room.ROOF_THICKNESS,
+                depth: this.size.z,
+            },
+            this._scene
+        );
+        roof.position = this.position.add(
+            new Vector3(this.size.x / 2, Room.WALL_HEIGHT - Room.ROOF_HEIGHT_OFFSET, this.size.z / 2)
+        );
+        const material = new StandardMaterial(`${this.name}_roofMaterial`, this._scene);
+        material.diffuseColor = new Color3(0.4, 0.4, 0.6);
+        roof.material = material;
+    }
+
+    protected _createWall(name: string, size: Vector3, position: Vector3): void {
+        const wall = MeshBuilder.CreateBox(
+            `${this.name}_${name}_wall`,
+            { width: size.x, height: size.y, depth: size.z },
+            this._scene
+        );
+        wall.position = this.position.add(position);
+        const material = new StandardMaterial(`${this.name}_${name}_wallMaterial`, this._scene);
+        material.diffuseColor = new Color3(0.5, 0.5, 0.5);
+        wall.material = material;
+        wall.metadata = { isObstacle: true };
+        new PhysicsAggregate(wall, PhysicsShapeType.BOX, { mass: 0 }, this._scene);
     }
 
     public setExit(exit: Exit, direction: "north" | "south" | "east" | "west"): void {
@@ -66,78 +117,67 @@ export class Room {
 
         this._exits[direction] = exit;
 
-        // Create the exit mesh
-        const exitSize = direction === "north" || direction === "south" ? new Vector3(4, this.wallHeight, this.wallThickness) : new Vector3(this.wallThickness, this.wallHeight, 2);
+        const isHorizontal = direction === "north" || direction === "south";
+        const exitSize = isHorizontal
+            ? new Vector3(Room.EXIT_WIDTH, Room.WALL_HEIGHT, Room.WALL_THICKNESS)
+            : new Vector3(Room.WALL_THICKNESS, Room.WALL_HEIGHT, Room.EXIT_DEPTH);
+
         const exitPosition = this._getExitPosition(direction);
-        const exitMesh = MeshBuilder.CreateBox(`${this.name}_${direction}_exit`, { width: exitSize.x, height: exitSize.y, depth: exitSize.z }, this._scene);
+
+        const exitMesh = MeshBuilder.CreateBox(
+            `${this.name}_${direction}_exit`,
+            { width: exitSize.x, height: exitSize.y, depth: exitSize.z },
+            this._scene
+        );
         exitMesh.position = exitPosition;
+        exitMesh.metadata = { isExit: true, exit };
 
-        // Add metadata to the exit mesh
-        exitMesh.metadata = {
-            isExit: true,
-            exit: exit,
-        };
+        const material = new StandardMaterial(`${this.name}_${direction}_exitMaterial`, this._scene);
+        material.diffuseColor = new Color3(1, 0, 0);
+        exitMesh.material = material;
 
-        const exitMaterial = new StandardMaterial(`${this.name}_${direction}_exitMaterial`, this._scene);
-        exitMaterial.diffuseColor = new Color3(1, 0, 0); // Red
-        exitMesh.material = exitMaterial;
-
-        new PhysicsAggregate(exitMesh, PhysicsShapeType.BOX, { mass: 0 }, this._scene); // Add physics to the exit
+        new PhysicsAggregate(exitMesh, PhysicsShapeType.BOX, { mass: 0 }, this._scene);
     }
 
-    private _getExitPosition(direction: "north" | "south" | "east" | "west"): Vector3 {
+    protected _getExitPosition(direction: "north" | "south" | "east" | "west"): Vector3 {
         switch (direction) {
             case "north":
-                // Exit on the north wall, positioned slightly inside the room
-                return this.position.add(new Vector3(this.size.x / 2, this.wallHeight / 2, this.wallThickness / 2));
+                return this.position.add(new Vector3(this.size.x / 2, Room.WALL_HEIGHT / 2, Room.WALL_THICKNESS / 2));
             case "south":
-                // Exit on the south wall, positioned slightly inside the room
-                return this.position.add(new Vector3(this.size.x / 2, this.wallHeight / 2, this.size.z - this.wallThickness / 2));
+                return this.position.add(new Vector3(this.size.x / 2, Room.WALL_HEIGHT / 2, this.size.z - Room.WALL_THICKNESS / 2));
             case "east":
-                // Exit on the east wall, positioned slightly inside the room
-                return this.position.add(new Vector3(this.size.x - this.wallThickness / 2, this.wallHeight / 2, this.size.z / 2));
+                return this.position.add(new Vector3(this.size.x - Room.WALL_THICKNESS / 2, Room.WALL_HEIGHT / 2, this.size.z / 2));
             case "west":
-                // Exit on the west wall, positioned slightly inside the room
-                return this.position.add(new Vector3(this.wallThickness / 2, this.wallHeight / 2, this.size.z / 2));
+                return this.position.add(new Vector3(Room.WALL_THICKNESS / 2, Room.WALL_HEIGHT / 2, this.size.z / 2));
             default:
                 throw new Error(`Invalid direction: ${direction}`);
         }
     }
 
-    public _playerEnter() {
-        // Logic for when the player enters the room
+    public _playerEnter(): void {
         console.log(`Player entered room: ${this.name}`);
-        // Lower the opacity of the walls and the roof
-        const roof = this._scene.getMeshByName(`${this.name}_roof`);
-        if (roof && roof.material instanceof StandardMaterial) {
-            // Log that roof is found
-            console.log(`Found roof: ${roof.name}`);
-            roof.material.alpha = 0.1; // Set roof transparency to 50%
-        }
+        this._setRoofTransparency(Room.ROOF_TRANSPARENCY);
+        this._setWallsTransparency(Room.WALL_TRANSPARENCY);
+    }
 
-        const wallDirections = ["north", "south", "east", "west"];
-        for (const direction of wallDirections) {
-            const wall = this._scene.getMeshByName(`${this.name}_${direction}_wall`);
-            if (wall && wall.material instanceof StandardMaterial) {
-                wall.material.alpha = 0.5; // Set wall transparency to 50%
-            }
+    public _playerExit(): void {
+        console.log(`Player exited room: ${this.name}`);
+        this._setRoofTransparency(Room.FULL_OPACITY);
+        this._setWallsTransparency(Room.FULL_OPACITY);
+    }
+
+    protected _setRoofTransparency(alpha: number): void {
+        const roof = this._scene.getMeshByName(`${this.name}_roof`);
+        if (roof?.material instanceof StandardMaterial) {
+            roof.material.alpha = alpha;
         }
     }
 
-    public _playerExit() {
-        // Logic for when the player exits the room
-        console.log(`Player exited room: ${this.name}`);
-        // Reset the opacity of the walls and the roof
-        const roof = this._scene.getMeshByName(`${this.name}_roof`);
-        if (roof && roof.material instanceof StandardMaterial) {
-            roof.material.alpha = 1; // Set roof transparency to 100%
-        }
-
-        const wallDirections = ["north", "south", "east", "west"];
-        for (const direction of wallDirections) {
-            const wall = this._scene.getMeshByName(`${this.name}_${direction}_wall`);
-            if (wall && wall.material instanceof StandardMaterial) {
-                wall.material.alpha = 1; // Set wall transparency to 100%
+    protected _setWallsTransparency(alpha: number): void {
+        for (const dir of ["north", "south", "east", "west"]) {
+            const wall = this._scene.getMeshByName(`${this.name}_${dir}_wall`);
+            if (wall?.material instanceof StandardMaterial) {
+                wall.material.alpha = alpha;
             }
         }
     }

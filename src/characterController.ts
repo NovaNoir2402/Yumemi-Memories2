@@ -33,7 +33,7 @@ export class Player extends TransformNode {
     private static readonly BODY_MASS = 1;
     private static readonly BODY_COLOR = new Color3(1, 0, 0); // Red
     private static readonly BODY_Y_POSITION = Player.BODY_HEIGHT / 2;
-    private static readonly ANGULAR_DAMPING = 10;
+    private static readonly ANGULAR_DAMPING = 1;
 
     private static readonly CAMERA_HEIGHT = 30;
     private static readonly CAMERA_Z_OFFSET = 40;
