@@ -31,9 +31,16 @@ class App {
 
     private _createCanvas(): HTMLCanvasElement {
         const canvas = document.createElement("canvas");
+        canvas.id = "gameCanvas";
+        canvas.style.position = "absolute";
+        canvas.style.top = "0";
+        canvas.style.left = "0";
         canvas.style.width = "100%";
         canvas.style.height = "100%";
-        canvas.id = "gameCanvas";
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.style.margin = "0"; // Supprime les marges du body
+        document.body.style.overflow = "hidden"; // Empêche les scrollbars
         document.body.appendChild(canvas);
         return canvas;
     }
@@ -55,6 +62,8 @@ class App {
         });
 
         window.addEventListener("resize", () => {
+            this._canvas.width = window.innerWidth;
+            this._canvas.height = window.innerHeight;
             this._engine.resize();
         });
     }
