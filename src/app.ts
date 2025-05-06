@@ -148,9 +148,10 @@ class App {
         room1._playerEnter();
 
         const enemyManager = new EnemyManager(scene, player);
-        enemyManager.spawnEnemies(room1, ENEMY_COUNT_ROOM1);
-        enemyManager.toggleAllEnemies();
-
+        enemyManager.spawnEnemies(room1, 2); // Spawn 1 enemy in room1
+        // enemyManager.toggleAllEnemies(); // Deactivate all enemies
+    
+        // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const loseButton = Button.CreateSimpleButton("lose", "LOSE GAME");
         loseButton.width = BUTTON_WIDTH;

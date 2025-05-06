@@ -7,12 +7,14 @@ import {
     Color3,
     PhysicsBody,
     PhysicsAggregate,
-    PhysicsShapeType
+    PhysicsShapeType,
+    Mesh
 } from "@babylonjs/core";
 import { Player } from "./characterController";
 
 export class Enemy extends TransformNode {
     public _scene: Scene;
+    private _mesh: Mesh;
     private _body: PhysicsBody;
     private _speed: number = 4;
     private _maxSpeed: number = 5;
@@ -24,59 +26,51 @@ export class Enemy extends TransformNode {
         super(name, scene);
         this._scene = scene;
         this._player = player;
-        this._aiBehavior = this._defaultBehavior;
-        this.position = spawnPosition;
-        this._initialize();
+        this._aiBehavior = this._defaultBehavior.bind(this);
+        this._initialize(spawnPosition);
     }
 
-    private _initialize(): void {
-        const bodyTransformNode = new TransformNode("enemyBodyTransform", this._scene);
-        bodyTransformNode.parent = this;
-
-        const bodyMesh = MeshBuilder.CreateSphere("enemyBody", { diameter: 2 }, this._scene);
-        bodyMesh.position.y = 1;
-        bodyMesh.parent = bodyTransformNode;
+    private _initialize(spawnPosition: Vector3): void {
+        // Create visual mesh
+        this._mesh = MeshBuilder.CreateSphere("enemyBody", { diameter: 2 }, this._scene);
+        this._mesh.position = spawnPosition.clone().add(new Vector3(0, 1, 0)); // Center above ground
+        this._mesh.parent = this;
 
         const material = new StandardMaterial("enemyMaterial", this._scene);
         material.diffuseColor = new Color3(0, 0, 1);
-        bodyMesh.material = material;
+        this._mesh.material = material;
 
-        const physicsAggregate = new PhysicsAggregate(
-            bodyMesh,
-            PhysicsShapeType.SPHERE,
-            { mass: 1, restitution: 0.5 },
-            this._scene
-        );
+        // Apply physics
+        const aggregate = new PhysicsAggregate(this._mesh, PhysicsShapeType.SPHERE, {
+            mass: 1,
+            restitution: 0.3,
+            friction: 0.5
+        }, this._scene);
 
-        this._body = physicsAggregate.body;
+        this._body = aggregate.body;
     }
 
     public update(): void {
-        if (!this._isActive || !this._body?.["_pluginData"]) {
-            if (!this._body?.["_pluginData"]) {
-                console.warn(`Enemy ${this.name} has an uninitialized physics body.`);
-            }
-            return;
-        }
-
+        if (!this._isActive || !this._body) return;
         this._aiBehavior(this, this._player);
     }
 
     private _defaultBehavior(enemy: Enemy, player: Player): void {
-        if (!enemy._body?.["_pluginData"]) {
-            console.warn(`Enemy ${enemy.name} has an uninitialized physics body.`);
-            return;
-        }
+        const enemyPos = enemy._mesh.getAbsolutePosition();
+        const playerPos = player.position;
 
-        const direction = player.position.subtract(enemy.position).normalize();
-        const moveSpeed = this._speed * 0.1;
+        const direction = playerPos.subtract(enemyPos);
+        direction.y = 0; // optional: stay on ground
+        const distance = direction.length();
 
-        enemy.position.addInPlace(direction.scale(moveSpeed));
+        if (distance < 0.1) return; // Too close to move
 
-        const currentVelocity = enemy._body.getLinearVelocity();
-        if (currentVelocity.length() > this._maxSpeed) {
-            const clampedVelocity = currentVelocity.normalize().scale(this._maxSpeed);
-            enemy._body.setLinearVelocity(clampedVelocity);
+        const velocity = direction.normalize().scale(this._speed);
+
+        // Set capped linear velocity
+        const currentVel = this._body.getLinearVelocity();
+        if (!currentVel || currentVel.length() < this._maxSpeed) {
+            this._body.setLinearVelocity(velocity);
         }
     }
 
