@@ -6,7 +6,7 @@ import { Player } from "./characterController";
 export class EnemyManager {
     private _scene: Scene;
     private _player: Player;
-    private _enemies: Enemy[] = []; // List of spawned enemies
+    private _enemies: Enemy[] = [];
 
     constructor(scene: Scene, player: Player) {
         this._scene = scene;
@@ -20,48 +20,38 @@ export class EnemyManager {
     ): void {
         for (let i = 0; i < amount; i++) {
             const spawnPosition = this._getRandomSpawnPosition(room);
-
-            // Create a new enemy with the spawn position
             const enemy = new Enemy(`enemy_${i}`, this._scene, this._player, spawnPosition);
 
-            // Assign the custom AI behavior if provided, otherwise use the default
             if (aiBehavior) {
                 enemy.setAIBehavior(aiBehavior);
             }
 
-            // Add the enemy to the list
             this._enemies.push(enemy);
         }
     }
 
     private _getRandomSpawnPosition(room: Room): Vector3 {
-        const y = 1; // Spawn on the ground level
-
-        // Choose a corner of the room
+        const y = 1;
         const corners = [
-            new Vector3(room.position.x + 1, y, room.position.z + 1), // Bottom-left corner
-            new Vector3(room.position.x + room.size.x - 1, y, room.position.z + 1), // Bottom-right corner
-            new Vector3(room.position.x + 1, y, room.position.z + room.size.z - 1), // Top-left corner
-            new Vector3(room.position.x + room.size.x - 1, y, room.position.z + room.size.z - 1), // Top-right corner
+            new Vector3(room.position.x + 1, y, room.position.z + 1),
+            new Vector3(room.position.x + room.size.x - 1, y, room.position.z + 1),
+            new Vector3(room.position.x + 1, y, room.position.z + room.size.z - 1),
+            new Vector3(room.position.x + room.size.x - 1, y, room.position.z + room.size.z - 1),
         ];
 
-        // Randomly select one of the corners
         const randomIndex = Math.floor(Math.random() * corners.length);
         return corners[randomIndex];
     }
 
     public updateEnemies(): void {
-        // Update all active enemies
         this._enemies.forEach((enemy) => enemy.update());
     }
 
     public toggleAllEnemies(): void {
-        // Toggle the active state of all enemies
         this._enemies.forEach((enemy) => enemy.toggleActiveState());
     }
 
     public clearEnemies(): void {
-        // Dispose of all enemies and clear the list
         this._enemies.forEach((enemy) => enemy.dispose());
         this._enemies = [];
     }
