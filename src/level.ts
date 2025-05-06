@@ -3,7 +3,7 @@ import { Room } from "./room";
 
 export class Level {
     private readonly _scene: Scene;
-    private _rooms: Room[] = [];
+    private readonly _rooms: Room[] = [];
 
     constructor(scene: Scene) {
         this._scene = scene;
