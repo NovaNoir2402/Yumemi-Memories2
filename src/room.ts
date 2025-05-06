@@ -39,6 +39,13 @@ export class Room {
         this._createWall("south", new Vector3(this.size.x, this.wallHeight, this.wallThickness), new Vector3(this.size.x / 2, this.wallHeight / 2, this.size.z));
         this._createWall("east", new Vector3(this.wallThickness, this.wallHeight, this.size.z), new Vector3(this.size.x, this.wallHeight / 2, this.size.z / 2));
         this._createWall("west", new Vector3(this.wallThickness, this.wallHeight, this.size.z), new Vector3(0, this.wallHeight / 2, this.size.z / 2));
+
+        // Create the roof
+        const roof = MeshBuilder.CreateBox(`${this.name}_roof`, { width: this.size.x, height: 0.1, depth: this.size.z }, this._scene);
+        const roofMaterial = new StandardMaterial(`${this.name}_roofMaterial`, this._scene);
+        roofMaterial.diffuseColor = new Color3(0.4, 0.4, 0.6); // Bluish
+        roof.material = roofMaterial;
+        roof.position = this.position.add(new Vector3(this.size.x / 2, this.wallHeight - 0.05, this.size.z / 2));
     }
 
     private _createWall(name: string, size: Vector3, position: Vector3): void {
@@ -94,6 +101,44 @@ export class Room {
                 return this.position.add(new Vector3(this.wallThickness / 2, this.wallHeight / 2, this.size.z / 2));
             default:
                 throw new Error(`Invalid direction: ${direction}`);
+        }
+    }
+
+    public _playerEnter() {
+        // Logic for when the player enters the room
+        console.log(`Player entered room: ${this.name}`);
+        // Lower the opacity of the walls and the roof
+        const roof = this._scene.getMeshByName(`${this.name}_roof`);
+        if (roof && roof.material instanceof StandardMaterial) {
+            // Log that roof is found
+            console.log(`Found roof: ${roof.name}`);
+            roof.material.alpha = 0.1; // Set roof transparency to 50%
+        }
+
+        const wallDirections = ["north", "south", "east", "west"];
+        for (const direction of wallDirections) {
+            const wall = this._scene.getMeshByName(`${this.name}_${direction}_wall`);
+            if (wall && wall.material instanceof StandardMaterial) {
+                wall.material.alpha = 0.5; // Set wall transparency to 50%
+            }
+        }
+    }
+
+    public _playerExit() {
+        // Logic for when the player exits the room
+        console.log(`Player exited room: ${this.name}`);
+        // Reset the opacity of the walls and the roof
+        const roof = this._scene.getMeshByName(`${this.name}_roof`);
+        if (roof && roof.material instanceof StandardMaterial) {
+            roof.material.alpha = 1; // Set roof transparency to 100%
+        }
+
+        const wallDirections = ["north", "south", "east", "west"];
+        for (const direction of wallDirections) {
+            const wall = this._scene.getMeshByName(`${this.name}_${direction}_wall`);
+            if (wall && wall.material instanceof StandardMaterial) {
+                wall.material.alpha = 1; // Set wall transparency to 100%
+            }
         }
     }
 }

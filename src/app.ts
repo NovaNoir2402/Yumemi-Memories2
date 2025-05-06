@@ -7,6 +7,7 @@ import { Environment } from "./environment";
 import { Player } from "./characterController";
 import HavokPhysics from "@babylonjs/havok";
 import { InputController } from "./inputController";
+import { EnemyManager } from "./enemyManager";
 
 enum State {
     START = 0,
@@ -97,29 +98,35 @@ class App {
         this._scene?.dispose();
         const scene = new Scene(this._engine);
         scene.clearColor = new Color4(0.015, 0.015, 0.203);
-
+    
         // Load Havok plugin
         const havokInterface = await HavokPhysics();
         const havokPlugin = new HavokPlugin(undefined, havokInterface);
         scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
-
+    
         const { camera, light } = this._addCameraAndLight(scene, "GameCamera");
-
+    
         // Create the environment
         const environment = new Environment(scene);
         // Create two rooms
         const room1 = environment.createRoom("Room1", new Vector3(40, 3, 40), new Vector3(0, 0, 0));
         const room2 = environment.createRoom("Room2", new Vector3(40, 3, 40), new Vector3(0, 0, 45));
-
+    
         // Create an exit between the two rooms
         environment.createExit(room1, room2, "south");
-
+    
         // Create the input controller
         const inputController = new InputController(scene);
-
+    
         // Create the player
-        const player = new Player("player", scene, inputController);
-
+        const player = new Player("player", scene, inputController, room1);
+        room1._playerEnter();
+    
+        // Initialize the EnemyManager and spawn one enemy
+        const enemyManager = new EnemyManager(scene, player);
+        enemyManager.spawnEnemies(room1, 2); // Spawn 1 enemy in room1
+        // enemyManager.toggleAllEnemies(); // Deactivate all enemies
+    
         // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const loseButton = Button.CreateSimpleButton("lose", "LOSE GAME");
@@ -128,17 +135,18 @@ class App {
         loseButton.color = "white";
         loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         guiMenu.addControl(loseButton);
-
+    
         loseButton.onPointerUpObservable.add(() => {
             this._goToLose();
         });
-
-        // Update the player and camera in the render loop
+    
+        // Update the player, enemies, and camera in the render loop
         this._engine.runRenderLoop(() => {
             scene.render();
             player.update();
+            enemyManager.updateEnemies(); // Update all enemies
         });
-
+    
         this._scene = scene;
         this._state = State.GAME;
     }

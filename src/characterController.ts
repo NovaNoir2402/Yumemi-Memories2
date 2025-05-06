@@ -13,6 +13,8 @@ import {
     ArcRotateCamera,
 } from "@babylonjs/core";
 import { InputController } from "./inputController";
+import { Exit } from "./exit";
+import { Room } from "./room";
 
 export class Player extends TransformNode {
     public _scene: Scene;
@@ -24,22 +26,28 @@ export class Player extends TransformNode {
     private _isGrounded: boolean = false;
     private _isOnSlope: boolean = false;
     private _groundedTimeout: any;
-    private _isInHallway: boolean = false; // Flag to track if the player is in the hallway
+    private _currentRoom: Room | null = null;
+    private _canTeleport: boolean = true;
 
-    constructor(name: string, scene: Scene, input: InputController) {
+    constructor(name: string, scene: Scene, input: InputController, room: Room) {
         super(name, scene);
         this._scene = scene;
         this._input = input;
+        this._currentRoom = room;
 
         this._initialize();
         this._setupPlayerCamera();
     }
 
     private _initialize(): void {
+        // Create a TransformNode for the player's body
+        const bodyTransformNode = new TransformNode("playerBodyTransform", this._scene);
+        bodyTransformNode.parent = this;
+
         // Create the player's visual body (e.g., a red cylinder)
         const bodyMesh = MeshBuilder.CreateCylinder("playerBody", { diameter: 1, height: 2 }, this._scene);
         bodyMesh.position.y = 1; // Position the body above the ground
-        bodyMesh.parent = this;
+        bodyMesh.parent = bodyTransformNode; // Parent the body mesh to the TransformNode
 
         // Apply a red material to the body
         const bodyMaterial = new StandardMaterial("playerMaterial", this._scene);
@@ -48,44 +56,40 @@ export class Player extends TransformNode {
 
         // Create a physics body for the player
         const shape = new PhysicsShapeMesh(bodyMesh, this._scene);
-        this._body = new PhysicsBody(bodyMesh, PhysicsMotionType.DYNAMIC, false, this._scene);
+        this._body = new PhysicsBody(bodyTransformNode, PhysicsMotionType.DYNAMIC, false, this._scene);
         this._body.shape = shape;
         this._body.setMassProperties({ mass: 1 });
 
         // Lock rotation to keep the player upright
-
         this._body.setAngularDamping(10); // Dampen angular motion to prevent tilting
 
         // Enable collision callbacks
         this._body.setCollisionCallbackEnabled(true);
 
-        // Listen for collision events
+        // Listen for collision events (existing logic remains unchanged)
         const collisionObservable = this._body.getCollisionObservable();
         collisionObservable.add((collisionEvent) => {
             if (collisionEvent.type === "COLLISION_STARTED") {
-                const otherObject = collisionEvent.collidedAgainst; // The other object involved in the collision
+                const otherObject = collisionEvent.collidedAgainst;
                 if (otherObject?.transformNode?.metadata?.isGround) {
-                    this._isGrounded = true; // Player is on the ground
-                    this._isOnSlope = otherObject.transformNode.metadata.isSlope ?? false; // Check if the ground is a slope
+                    this._isGrounded = true;
+                    this._isOnSlope = otherObject.transformNode.metadata.isSlope ?? false;
                 }
             } else if (collisionEvent.type === "COLLISION_FINISHED") {
                 const otherObject = collisionEvent.collidedAgainst;
                 if (otherObject?.transformNode?.metadata?.isGround) {
-                    this._isGrounded = false; // Player left the ground
-                    this._isOnSlope = false; // Reset slope status
+                    this._isGrounded = false;
+                    this._isOnSlope = false;
                 }
             }
         });
         collisionObservable.add((collisionEvent) => {
             if (collisionEvent.type === "COLLISION_STARTED") {
                 const otherObject = collisionEvent.collidedAgainst; // The other object involved in the collision
-                if (otherObject?.transformNode?.metadata?.isHallway) {
-                    this._isInHallway = true; // Player is in the hallway
-                }
-            } else if (collisionEvent.type === "COLLISION_FINISHED") {
-                const otherObject = collisionEvent.collidedAgainst;
-                if (otherObject?.transformNode?.metadata?.isHallway) {
-                    this._isInHallway = false; // Player left the hallway
+                if (otherObject?.transformNode?.metadata?.isExit) {
+                    const exit = otherObject.transformNode.metadata.exit; // Get the exit object
+                    console.log(`Player collided with exit: ${exit.name}`); // Log the exit name
+                    this._handleExitCollision(exit); // Handle the exit collision
                 }
             }
         });
@@ -117,6 +121,10 @@ export class Player extends TransformNode {
     public update(): void {
         this._input.update();
         this.updateCamera(); // Update camera position
+        // Check if the player pressed the "M" key for teleportation
+        if (this._input.debug) {
+            this.teleportToRoomCenter();
+        }
 
         // Periodically check if the player is on a slope
         this._checkIfOnSlope();
@@ -138,7 +146,7 @@ export class Player extends TransformNode {
             cameraRelativeDirection.normalize();
 
             // Apply force in the camera-relative direction
-            const force = cameraRelativeDirection.scale(5); // Adjust force for movement speed
+            const force = cameraRelativeDirection.scale(10); // Adjust force for movement speed
             this._body.applyForce(force, this._body.getObjectCenterWorld());
 
             // Limit the player's speed to a maximum value
@@ -178,12 +186,6 @@ export class Player extends TransformNode {
         if (this._body?._pluginData) {
             this._body.setAngularVelocity(Vector3.Zero());
         }
-
-        // Check if the player is on the hallway ground
-        if (this._isInHallway && this._input.inputMap["j"]) {
-            this._teleportToOtherRoom(); // Teleport to the other room
-            this._input.inputMap["j"] = false; // Prevent continuous teleportation
-        }
     }
 
     private _checkIfOnSlope(): void {
@@ -213,17 +215,29 @@ export class Player extends TransformNode {
 
 
     private _isRotating: boolean = false; // Flag to track if the camera is rotating
+    private _isZooming: boolean = false; // Flag to track if the camera is zooming
+    private _zoomLimit: number = 50; // Maximum zoom limit
+    private _zoomSpeed: number = 1; // Speed of zooming
 
     public updateCamera(): void {
-        // Check if Q or E is pressed to rotate the camera
-        if (!this._isRotating) { // Only allow rotation if the camera is not already rotating
-            if (this._input.inputMap["q"]) {
-                this._rotateCamera(-Math.PI / 2); // Rotate counterclockwise
-                this._input.inputMap["q"] = false; // Prevent continuous rotation
-            }
-            if (this._input.inputMap["e"]) {
-                this._rotateCamera(Math.PI / 2); // Rotate clockwise
-                this._input.inputMap["e"] = false; // Prevent continuous rotation
+        // Set the camera's target to the player's position
+        this.camera.setTarget(this._body.transformNode.position);
+
+        // Check if there is any camera rotation input
+        if (!this._isRotating && this._input.cameraRotation !== 0) {
+            const rotationAngle = this._input.cameraRotation * (Math.PI / 8); // Adjust rotation angle as needed
+            this._rotateCamera(rotationAngle);
+        }
+        // Check if the camera is zooming
+        if (!this._isZooming && this._input.cameraZoom !== 0) {
+            const zoomAmount = this._input.cameraZoom * this._zoomSpeed; // Adjust zoom speed as needed
+            const newRadius = this.camera.radius - zoomAmount; // Calculate the new radius
+
+            // Clamp the radius to the zoom limit
+            if (newRadius > 10 && newRadius < this._zoomLimit) {
+                this.camera.radius = newRadius; // Update the camera's radius
+            } else if (newRadius <= 0) {
+                this.camera.radius = 0.1; // Prevent negative radius
             }
         }
     }
@@ -252,19 +266,75 @@ export class Player extends TransformNode {
         }, 8); // Run at ~120 FPS (8ms per frame)
     }
 
-    // Teleport the player to the opposite side of the hallway
-    private _teleportToOtherRoom(): void {
-        // Determine the current room and target room
-        const currentRoomCenter = this._isInHallway ? new Vector3(0, 0, 30) : new Vector3(0, 0, 0); // Example positions
-        const targetRoomCenter = this._isInHallway ? new Vector3(0, 0, 60) : new Vector3(0, 0, 30);
+
+    private _handleExitCollision(exit: Exit): void {
+        if (!this._canTeleport) {
+            console.log("Teleportation is on cooldown.");
+            return; // Exit early if teleportation is on cooldown
+        }
+
+        console.log(`Handling collision with exit between rooms: ${exit.room1.name} and ${exit.room2.name}`);
+
+        // Determine the room to teleport to
+        const targetRoom = exit.room1.name === this._currentRoom?.name ? exit.room2 : exit.room1;
+
+        // Teleport the player to the target room
+        this._teleportToRoom(targetRoom);
+
+        // Set teleportation on cooldown
+        this._canTeleport = false;
+
+        // Reset the cooldown after 5 seconds
+        setTimeout(() => {
+            this._canTeleport = true;
+            console.log("Teleportation cooldown reset.");
+        }, 5000); // 5 seconds cooldown
+    }
+
+    private _teleportToRoom(room: Room): void {
+        console.log(`Teleporting player to room: ${room.name}`);
+
+        // Temporarily disable physics updates
+        this._body.disablePreStep = false;
 
         // Move the player to the target room
-        this.position = targetRoomCenter.clone().add(new Vector3(0, 1, 0)); // Slightly above the ground
+        this._body.transformNode.position.copyFrom(room.center); // Update the TransformNode's position
 
-        // Update the camera to center on the target room
-        this.camera.target = targetRoomCenter;
+        // Exit the current room
+        if (this._currentRoom) {
+            this._currentRoom._playerExit(); // Call the room's player exit method
+        }
 
-        // Update the hallway flag
-        this._isInHallway = !this._isInHallway;
+        room._playerEnter(); // Call the room's player enter method
+
+        // Update the current room
+        this._currentRoom = room;
+
+        // Move the camera to the center of the new room
+        this.camera.setTarget(room.center); // Set the camera's target to the room center
+        this.camera.position = new Vector3(room.center.x, room.center.y + 30, room.center.z + 40); // Adjust the camera's position relative to the room center
+
+    }
+
+    public teleportToRoomCenter(): void {
+
+        if (this._currentRoom) {
+
+            console.log("Teleporting player to room center");
+            // Temporarily disable physics updates
+            this._body.disablePreStep = false;
+
+            // Move the TransformNode to the center of the current room
+            this._body.transformNode.position.copyFrom(this._currentRoom.center);
+
+        }
+    }
+
+    public get position(): Vector3 {
+        // Always return a value, even if the player is not initialized
+        if (this._body?.transformNode) {
+            return this._body.transformNode.position.clone(); // Return a clone of the position to avoid direct modification
+        }
+        return Vector3.Zero(); // Return a default position (Vector3.Zero) if uninitialized
     }
 }
