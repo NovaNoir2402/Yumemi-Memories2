@@ -27,7 +27,8 @@ jobs:
 
       - name: Build project
         run: |
-          export NVM_DIR="$HOME/.nvm"
-          source "$NVM_DIR/nvm.sh"
-          nvm use
-          nvm run build
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            nvm use
+            npm ci   # or npm install if you're not using a lockfile
+            npm run build
