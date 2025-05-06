@@ -134,7 +134,7 @@ class App {
         // Initialize the EnemyManager and spawn one enemy
         const enemyManager = new EnemyManager(scene, player);
         enemyManager.spawnEnemies(room1, 2); // Spawn 1 enemy in room1
-        // enemyManager.toggleAllEnemies(); // Deactivate all enemies
+        enemyManager.toggleAllEnemies(); // Deactivate all enemies
     
         // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
