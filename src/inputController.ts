@@ -8,6 +8,7 @@ export class InputController {
     public cameraRotation: number = 0; // Camera rotation
     public cameraZoom: number = 0; // Camera zoom
     public debug: number = 0 // Debug mode for teleportation
+    public shoot: boolean = false; // Shooting action
 
     constructor(scene: Scene) {
         scene.actionManager = new ActionManager(scene);
@@ -34,5 +35,6 @@ export class InputController {
         this.cameraZoom = (this.inputMap["ArrowUp"] ? 1 : 0) - (this.inputMap["ArrowDown"] ? 1 : 0); // Arrow keys for camera zoom
         // M button for debug teleport
         this.debug = this.inputMap["m"] ? 1 : 0;
+        this.shoot = this.inputMap["f"]; // F key for shooting
     }
 }

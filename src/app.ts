@@ -148,7 +148,7 @@ class App {
         room1._playerEnter();
 
         const enemyManager = new EnemyManager(scene, player);
-        enemyManager.spawnEnemies(room1, 2); // Spawn 1 enemy in room1
+        // enemyManager.spawnEnemies(room1, 2); // Spawn 1 enemy in room1
         // enemyManager.toggleAllEnemies(); // Deactivate all enemies
     
         // Add a lose game button

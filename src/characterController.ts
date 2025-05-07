@@ -16,6 +16,7 @@ import {
 import { InputController } from "./inputController";
 import { Exit } from "./exit";
 import { Room } from "./room";
+import { Bullet } from "./Bullet";
 
 export class Player extends TransformNode {
     public _scene: Scene;
@@ -26,6 +27,7 @@ export class Player extends TransformNode {
     private _isOnSlope: boolean = false;
     private _currentRoom: Room | null = null;
     private _canTeleport: boolean = true;
+    private _hasShot: boolean = false;
 
     // Constants
     private static readonly BODY_HEIGHT = 2;
@@ -35,8 +37,8 @@ export class Player extends TransformNode {
     private static readonly BODY_Y_POSITION = Player.BODY_HEIGHT / 2;
     private static readonly ANGULAR_DAMPING = 1;
 
-    private static readonly CAMERA_HEIGHT = 30;
-    private static readonly CAMERA_Z_OFFSET = 40;
+    private static readonly CAMERA_HEIGHT = 10;
+    private static readonly CAMERA_Z_OFFSET = 20;
     private static readonly CAMERA_ROTATION_SPEED = Math.PI / 8;
     private static readonly CAMERA_ZOOM_SPEED = 1;
     private static readonly CAMERA_MIN_RADIUS = 0.1;
@@ -115,14 +117,15 @@ export class Player extends TransformNode {
 
     public updateCamera(): void {
         this.camera.setTarget(this._body.transformNode.position);
-
+    
         if (!this._isRotating && this._input.cameraRotation !== 0) {
             const angle = this._input.cameraRotation * Player.CAMERA_ROTATION_SPEED;
             this._smoothCameraRotation(angle);
         }
-
-        if (!this._isZooming && this._input.cameraZoom !== 0) {
-            this._applyCameraZoom();
+    
+        if (this._input.cameraZoom !== 0) {
+            const newBeta = this.camera.beta + this._input.cameraZoom * 0.02;
+            this.camera.beta = Math.min(Math.max(newBeta, 0.1), Math.PI / 2.5);
         }
     }
 
@@ -232,6 +235,26 @@ export class Player extends TransformNode {
         if (this._body?._pluginData) {
             this._body.setAngularVelocity(Vector3.Zero());
         }
+
+        if (this._input.shoot) {
+            this._input.shoot = false; // prevent continuous firing
+        
+            const cameraForward = this.camera.getForwardRay().direction;
+            const shootOrigin = this._body.transformNode.position.add(cameraForward.scale(1)); // just in front of player
+        
+            new Bullet(this._scene, shootOrigin, cameraForward);
+        }
+    }
+
+    private _shootBullet(): void {
+        // Starting point at camera
+        const origin = this.camera.position.clone();
+        const forward = this.camera.getForwardRay().direction.clone();
+        // Offset bullet start a bit forward to avoid collision with player
+        const startPos = origin.add(forward.scale(2));
+
+        // Create bullet
+        new Bullet(this._scene, startPos, forward);
     }
 
     private _applyMovement(direction: Vector3): void {
