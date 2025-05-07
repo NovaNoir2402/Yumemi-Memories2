@@ -28,13 +28,14 @@ export class Player extends TransformNode {
     private _currentRoom: Room | null = null;
     private _canTeleport: boolean = true;
     private _hasShot: boolean = false;
+    private _canShoot: boolean = true;
 
     // Constants
     private static readonly BODY_HEIGHT = 2;
     private static readonly BODY_DIAMETER = 1;
     private static readonly BODY_MASS = 1;
     private static readonly BODY_COLOR = new Color3(1, 0, 0); // Red
-    private static readonly BODY_Y_POSITION = Player.BODY_HEIGHT / 2;
+    private static readonly BODY_Y_POSITION = 0; // Player.BODY_HEIGHT / 2;
     private static readonly ANGULAR_DAMPING = 1;
 
     private static readonly CAMERA_HEIGHT = 10;
@@ -54,6 +55,8 @@ export class Player extends TransformNode {
     private static readonly RAY_LENGTH = 2;
     private static readonly CAMERA_ROTATION_FRAMES = 30;
     private static readonly CAMERA_ROTATION_INTERVAL_MS = 8;
+    
+    private static readonly SHOOT_COOLDOWN_MS = 300;
 
     constructor(name: string, scene: Scene, input: InputController, room: Room) {
         super(name, scene);
@@ -236,13 +239,17 @@ export class Player extends TransformNode {
             this._body.setAngularVelocity(Vector3.Zero());
         }
 
-        if (this._input.shoot) {
-            this._input.shoot = false; // prevent continuous firing
+        if (this._input.shoot && this._canShoot) {
+            this._input.shoot = false;
+            this._canShoot = false;
         
             const cameraForward = this.camera.getForwardRay().direction;
-            const shootOrigin = this._body.transformNode.position.add(cameraForward.scale(1)); // just in front of player
-        
+            const shootOrigin = this._body.transformNode.position.add(cameraForward.scale(1));
             new Bullet(this._scene, shootOrigin, cameraForward);
+        
+            setTimeout(() => {
+                this._canShoot = true;
+            }, Player.SHOOT_COOLDOWN_MS);
         }
     }
 

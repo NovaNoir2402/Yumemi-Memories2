@@ -22,11 +22,11 @@ export class EnemyManager {
             const spawnPos = this._getRandomSpawnPosition(room);
     
             // DEBUG VISUEL : une petite sphère rouge
-            const marker = MeshBuilder.CreateSphere(`debug_spawn_${i}`, { diameter: 0.3 }, this._scene);
+            /*const marker = MeshBuilder.CreateSphere(`debug_spawn_${i}`, { diameter: 0.3 }, this._scene);
             marker.position = spawnPos.clone();
             const mat = new StandardMaterial(`debugMat_${i}`, this._scene);
             mat.diffuseColor = new Color3(1, 0, 0);
-            marker.material = mat;
+            marker.material = mat;*/
     
             const enemy = new Enemy(`enemy_${i}`, this._scene, this._player, spawnPos);
             aiBehavior && enemy.setAIBehavior(aiBehavior);
