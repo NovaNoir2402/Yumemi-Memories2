@@ -5,7 +5,6 @@ import {
     Vector3,
     StandardMaterial,
     Color3,
-    UniversalCamera,
     PhysicsBody,
     PhysicsMotionType,
     PhysicsShapeMesh,
@@ -16,12 +15,12 @@ import {
 import { InputController } from "./inputController";
 import { Exit } from "./exit";
 import { Room } from "./room";
+import { Entity } from "./entity";
 
-export class Player extends TransformNode {
+export class Player extends Entity  {
     public _scene: Scene;
-    private _body: PhysicsBody;
     public camera: ArcRotateCamera;
-    private _input: InputController;
+    private readonly _input: InputController;
     private _isGrounded: boolean = false;
     private _isOnSlope: boolean = false;
     private _currentRoom: Room | null = null;
@@ -55,7 +54,6 @@ export class Player extends TransformNode {
 
     constructor(name: string, scene: Scene, input: InputController, room: Room) {
         super(name, scene);
-        this._scene = scene;
         this._input = input;
         this._currentRoom = room;
 
@@ -65,40 +63,22 @@ export class Player extends TransformNode {
 
     // --- Initialization ---
     private _initialize(): void {
-        const bodyTransform = this._createTransformNode();
-        const mesh = this._createBodyMesh(bodyTransform);
-        this._setupPhysics(bodyTransform, mesh);
-        this._setupCollisionListeners();
-    }
-
-    private _createTransformNode(): TransformNode {
         const transformNode = new TransformNode("playerBodyTransform", this._scene);
         transformNode.parent = this;
-        return transformNode;
-    }
 
-    private _createBodyMesh(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateCylinder("playerBody", {
+        this._mesh = MeshBuilder.CreateCylinder("playerBody", {
             diameter: Player.BODY_DIAMETER,
             height: Player.BODY_HEIGHT
         }, this._scene);
-        mesh.position.y = Player.BODY_Y_POSITION;
-        mesh.parent = parent;
+        this._mesh.position.y = Player.BODY_Y_POSITION;
+        this._mesh.parent = transformNode;
 
         const material = new StandardMaterial("playerMaterial", this._scene);
         material.diffuseColor = Player.BODY_COLOR;
-        mesh.material = material;
+        this._mesh.material = material;
 
-        return mesh;
-    }
-
-    private _setupPhysics(transformNode: TransformNode, mesh: Mesh): void {
-        const shape = new PhysicsShapeMesh(mesh, this._scene);
-        this._body = new PhysicsBody(transformNode, PhysicsMotionType.DYNAMIC, false, this._scene);
-        this._body.shape = shape;
-        this._body.setMassProperties({ mass: Player.BODY_MASS });
-        this._body.setAngularDamping(Player.ANGULAR_DAMPING);
-        this._body.setCollisionCallbackEnabled(true);
+        this._initPhysicsMesh(this._mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
+        this._setupCollisionListeners();
     }
 
     private _setupCamera(): void {
@@ -253,7 +233,7 @@ export class Player extends TransformNode {
         }
     }
 
-    private _dampenVelocity(): void {
+    protected _dampenVelocity(): void {
         const velocity = this._body.getLinearVelocity();
         const damped = new Vector3(
             velocity.x * Player.DAMPING_FACTOR,
