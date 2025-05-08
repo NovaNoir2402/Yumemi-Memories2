@@ -10,6 +10,9 @@ import {
 import { Exit } from "./exit";
 
 export class Room {
+    static ROOM_SIZE(arg0: string, ROOM_SIZE: any, ROOM1_POSITION: any) {
+        throw new Error("Method not implemented.");
+    }
     public name: string;
     public size: Vector3;
     public center: Vector3;
@@ -94,6 +97,7 @@ export class Room {
         const material = new StandardMaterial(`${this.name}_roofMaterial`, this._scene);
         material.diffuseColor = new Color3(0.4, 0.4, 0.6);
         roof.material = material;
+        new PhysicsAggregate(floor, PhysicsShapeType.BOX, { mass: 0 }, this._scene);
     }
 
     protected _createWall(name: string, size: Vector3, position: Vector3): void {

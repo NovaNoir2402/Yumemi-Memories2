@@ -1,13 +1,11 @@
-import {
-    MeshBuilder,
-    PhysicsAggregate,
-    PhysicsShapeType,
-    Scene,
-    StandardMaterial,
-} from "@babylonjs/core";
 import { RoomModel } from "./roomModel";
 import { FloorModel } from "./floorModel";
 import { RoofModel } from "./roofModel";
+import { Scene } from "@babylonjs/core/scene";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
+import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 
 export class RoomView {
     
@@ -41,6 +39,7 @@ export class RoomView {
         const material = new StandardMaterial(`${roof.name}_roofMaterial`, this.scene);
         material.diffuseColor = roof.color;
         roofMesh.material = material;
+        new PhysicsAggregate(roofMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     }
 
     protected _createFloor(): void {

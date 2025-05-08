@@ -1,7 +1,9 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { DoorModel } from "./doorModel";
 import { FloorModel } from "./floorModel";
 import { RoofModel } from "./roofModel";
 import { WallModel } from "./wallModel";
-import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
 
 export class RoomModel{
 
@@ -9,6 +11,7 @@ export class RoomModel{
     public readonly walls: WallModel[];
     public readonly floor: FloorModel;
     public readonly roof: RoofModel;
+    public readonly doors: DoorModel[];
     public readonly size: Vector3;
 
     constructor(name: string, size: Vector3) {
@@ -22,6 +25,5 @@ export class RoomModel{
         this.floor = new FloorModel(`${this.name}_floor`, this.size, new Vector3(this.size.x / 2, FloorModel.FLOOR_DEPTH_OFFSET, this.size.z / 2), new Color3(0.4, 0.6, 0.4));
         this.roof = new RoofModel(`${this.name}_roof`, this.size, new Vector3(this.size.x / 2, WallModel.WALL_HEIGHT - RoofModel.ROOF_HEIGHT_OFFSET, this.size.z / 2),  new Color3(0.4, 0.4, 0.6));
     }
-
 
 }

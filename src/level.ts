@@ -12,7 +12,7 @@ export class Level {
 
     public generateSimpleGrid(gridSize: number, roomSize: Vector3): void {
         const environment = new Environment(scene);
-                const room1 = environment.createRoom("Room1", ROOM_SIZE, ROOM1_POSITION);
+                const room1 = environment.createRoom("Room1", Room.ROOM_SIZE, ROOM1_POSITION);
                 const room2 = environment.createRoom("Room2", ROOM_SIZE, ROOM2_POSITION);
                 environment.createExit(room1, room2, "south");
         const spacing = roomSize.add(new Vector3(2, 0, 2)); // Add some space between rooms
