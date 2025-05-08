@@ -15,20 +15,26 @@ import {
 import { InputController } from "./inputController";
 import { Exit } from "./exit";
 import { Room } from "./room";
+import { Entity } from "./entity";
 
 /**
  * Bullet projectile class.
  */
-export class Bullet {
-    private _scene: Scene;
-    private _mesh: Mesh;
-    private _body: PhysicsBody;
+export class Bullet extends Entity {
+    public _scene: Scene;
+    protected _mesh: Mesh;
+    public _body: PhysicsBody;
+    private damage: number;
 
-    constructor(scene: Scene, position: Vector3, direction: Vector3) {
+    constructor(scene: Scene, position: Vector3, direction: Vector3, damage: number) {
+        super("bullet", scene);
         this._scene = scene;
+        this._isLethal = true;
+        this.damage = damage;
         // Create bullet mesh
         this._mesh = MeshBuilder.CreateSphere("bullet", { diameter: Bullet.DIAMETER }, this._scene);
         this._mesh.position.copyFrom(position);
+        this._mesh.metadata = { entity: this };
         
         // Material
         const mat = new StandardMaterial("bulletMat", this._scene);

@@ -13,9 +13,11 @@ import {
 export abstract class Entity extends TransformNode {
     protected _mesh: Mesh;
     protected _body: PhysicsBody;
+    public _isLethal: boolean;
 
     constructor(name: string, scene: Scene) {
         super(name, scene);
+        this._isLethal = false;
     }
 
     protected _initPhysicsMesh(
