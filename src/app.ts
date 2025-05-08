@@ -160,6 +160,10 @@ class App {
         loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         guiMenu.addControl(loseButton);
 
+        player.onDeath = () => {
+            this._goToLose();
+        };
+
         loseButton.onPointerUpObservable.add(() => {
             this._goToLose();
         });

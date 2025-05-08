@@ -12,6 +12,16 @@ import {
     ArcRotateCamera,
     Mesh,
 } from "@babylonjs/core";
+
+import {
+    Control,
+    PlanePanel,
+    Rectangle,
+    TextBlock,
+    AdvancedDynamicTexture,
+    StackPanel,
+} from "@babylonjs/gui";
+
 import { InputController } from "./inputController";
 import { Exit } from "./exit";
 import { Room } from "./room";
@@ -28,6 +38,10 @@ export class Player extends Entity  {
     private _canTeleport: boolean = true;
     private _hasShot: boolean = false;
     private _canShoot: boolean = true;
+    public onDeath?: () => void;
+
+    private _healthBarBackground: Rectangle;
+    private _healthBarForeground: Rectangle;
 
     // Constants
     private static readonly BODY_HEIGHT = 2;
@@ -54,8 +68,12 @@ export class Player extends Entity  {
     private static readonly RAY_LENGTH = 2;
     private static readonly CAMERA_ROTATION_FRAMES = 30;
     private static readonly CAMERA_ROTATION_INTERVAL_MS = 8;
+    private static readonly BULLET_DAMAGE = 30;
     
     private static readonly SHOOT_COOLDOWN_MS = 300;
+    private _health: number = 100;
+    private _canTakeDamage: boolean = true;
+    private static readonly DAMAGE_COOLDOWN_MS = 2000;
 
     constructor(name: string, scene: Scene, input: InputController, room: Room) {
         super(name, scene);
@@ -64,6 +82,7 @@ export class Player extends Entity  {
 
         this._initialize();
         this._setupCamera();
+        this._setupHUD();
     }
 
     // --- Initialization ---
@@ -84,6 +103,49 @@ export class Player extends Entity  {
 
         this._initPhysicsMesh(this._mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
         this._setupCollisionListeners();
+    }
+
+    private _setupHUD(): void {
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this._scene);
+    
+        // Conteneur principal
+        const healthContainer = new Rectangle();
+        healthContainer.width = "220px";
+        healthContainer.height = "60px";
+        healthContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        healthContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        healthContainer.paddingTop = "10px";
+        healthContainer.paddingLeft = "10px";
+        advancedTexture.addControl(healthContainer);
+    
+        const stackPanel = new StackPanel();
+        stackPanel.isVertical = true;
+        healthContainer.addControl(stackPanel);
+    
+        // Fond de la barre de vie
+        this._healthBarBackground = new Rectangle();
+        this._healthBarBackground.width = "200px";
+        this._healthBarBackground.height = "20px";
+        this._healthBarBackground.color = "white";
+        this._healthBarBackground.background = "gray";
+        this._healthBarBackground.thickness = 1;
+        this._healthBarBackground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        stackPanel.addControl(this._healthBarBackground);
+    
+        // Barre de vie rouge (au-dessus du fond)
+        this._healthBarForeground = new Rectangle();
+        this._healthBarForeground.width = "100%";
+        this._healthBarForeground.height = "100%";
+        this._healthBarForeground.background = "red";
+        this._healthBarForeground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this._healthBarForeground.thickness = 0;
+        this._healthBarBackground.addControl(this._healthBarForeground);
+    
+        // Mise à jour dynamique
+        this._scene.registerBeforeRender(() => {
+            const percentage = Math.max(0, this._health) / 100;
+            this._healthBarForeground.width = `${percentage * 100}%`;
+        });
     }
 
     private _setupCamera(): void {
@@ -134,6 +196,23 @@ export class Player extends Entity  {
         this.camera.radius = Math.min(Math.max(newRadius, Player.CAMERA_MIN_RADIUS), Player.CAMERA_MAX_RADIUS);
     }
 
+    public takeDamage(amount: number): void {
+        if (!this._canTakeDamage) return;
+    
+        this._health -= amount;
+        console.log(`Player took ${amount} damage! Remaining health: ${this._health}`);
+    
+        this._canTakeDamage = false;
+        setTimeout(() => {
+            this._canTakeDamage = true;
+        }, Player.DAMAGE_COOLDOWN_MS);
+    
+        if (this._health <= 0) {
+            this.onDeath();
+        }
+    }
+
+
     // --- Collision ---
     private _setupCollisionListeners(): void {
         const observable = this._body.getCollisionObservable();
@@ -155,6 +234,19 @@ export class Player extends Entity  {
             const meta = event.collidedAgainst?.transformNode?.metadata;
             if (event.type === "COLLISION_STARTED" && meta?.isExit) {
                 this._handleExitCollision(meta.exit);
+            }
+        });
+
+        observable.add(event => {
+            if (event.type !== "COLLISION_STARTED") return;
+        
+            const otherTransform = event.collidedAgainst?.transformNode;
+            if (!otherTransform) return;
+        
+            const entity = otherTransform.metadata?.entity;
+            if (entity && entity._isLethal) {
+                const damage = (entity as any).damage ?? 10;
+                this.takeDamage(damage);
             }
         });
     }
@@ -209,7 +301,7 @@ export class Player extends Entity  {
             const counterForce = Player.SLOPE_GRAVITY * Math.sin(Player.SLOPE_ANGLE);
             this._body.applyForce(new Vector3(0, counterForce, 0), this._body.getObjectCenterWorld());
         }
-
+        
         if (this._input.jump && this._isGrounded) {
             this._body.applyImpulse(Player.JUMP_FORCE, this._body.getObjectCenterWorld());
             this._isGrounded = false;
@@ -225,7 +317,7 @@ export class Player extends Entity  {
         
             const cameraForward = this.camera.getForwardRay().direction;
             const shootOrigin = this._body.transformNode.position.add(cameraForward.scale(1));
-            new Bullet(this._scene, shootOrigin, cameraForward);
+            new Bullet(this._scene, shootOrigin, cameraForward, Player.BULLET_DAMAGE);
         
             setTimeout(() => {
                 this._canShoot = true;
@@ -241,7 +333,7 @@ export class Player extends Entity  {
         const startPos = origin.add(forward.scale(2));
 
         // Create bullet
-        new Bullet(this._scene, startPos, forward);
+        new Bullet(this._scene, startPos, forward, Player.BULLET_DAMAGE);
     }
 
     private _applyMovement(direction: Vector3): void {
@@ -291,5 +383,9 @@ export class Player extends Entity  {
 
     public get position(): Vector3 {
         return this._body?.transformNode?.position.clone() ?? Vector3.Zero();
+    }
+
+    public get health(): number {
+        return this._health;
     }
 }

@@ -3,7 +3,8 @@ import {
     StandardMaterial,
     Color3,
     Vector3,
-    Scene
+    Scene,
+    IPhysicsCollisionEvent
 } from "@babylonjs/core";
 import { Entity } from "./entity";
 import { Player } from "./characterController"; // Or wherever the Player class is
@@ -14,24 +15,46 @@ export class Enemy extends Entity {
     private readonly _player: Player;
     private _isActive: boolean = true;
     private _aiBehavior: (enemy: Enemy, player: Player) => void;
+    private health: number;
+    private damage: number;
 
-    constructor(name: string, scene: Scene, player: Player, spawnPosition: Vector3) {
+    constructor(name: string, scene: Scene, player: Player, spawnPosition: Vector3, damage: number, health: number) {
         super(name, scene);
         this._player = player;
         this._aiBehavior = this._defaultBehavior.bind(this);
         this._initialize(spawnPosition);
+        this._isLethal = true;
+        this.damage = damage;
+        this.health = health;
     }
 
     private _initialize(spawnPosition: Vector3): void {
         this._mesh = MeshBuilder.CreateSphere("enemyBody", { diameter: 2 }, this._scene);
         this._mesh.position = spawnPosition.clone().add(new Vector3(0, 1, 0));
         this._mesh.parent = this;
+        this._mesh.metadata = { entity: this };
 
         const material = new StandardMaterial("enemyMaterial", this._scene);
         material.diffuseColor = new Color3(0, 0, 1);
         this._mesh.material = material;
 
         this._initPhysicsAggregate(this._mesh, 1);
+
+        this._body?.setCollisionCallbackEnabled(true);
+
+        this._body?.getCollisionObservable()?.add((event: IPhysicsCollisionEvent) => {
+            if (event.type !== "COLLISION_STARTED") return;
+    
+            const otherTransform = event.collidedAgainst?.transformNode;
+            if (!otherTransform) return;
+            
+            const entity = otherTransform.metadata?.entity;
+            if (entity && entity._isLethal) {
+                console.log(`Enemy ${this.name} collided with lethal entity ${entity.name}`);
+                const damage = (entity as any).damage ?? 10;
+                this.takeDamage(damage);
+            }
+        });
     }
 
     public update(): void {
@@ -62,5 +85,20 @@ export class Enemy extends Entity {
 
     public setAIBehavior(behavior: (enemy: Enemy, player: Player) => void): void {
         this._aiBehavior = behavior;
+    }
+
+    public takeDamage(amount: number): void {
+        this.health -= amount;
+        console.log(`${this.name} took ${amount} damage, health now ${this.health}`);
+        if (this.health <= 0) {
+            this._die();
+        }
+    }
+
+    private _die(): void {
+        this._isActive = false;
+        this._mesh.setEnabled(false); // Cache le mesh
+        this._body.setLinearVelocity(Vector3.Zero()); // Arrête le mouvement
+        console.log(`${this.name} has died`);
     }
 }

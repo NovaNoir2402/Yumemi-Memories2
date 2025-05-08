@@ -28,7 +28,7 @@ export class EnemyManager {
             mat.diffuseColor = new Color3(1, 0, 0);
             marker.material = mat;*/
     
-            const enemy = new Enemy(`enemy_${i}`, this._scene, this._player, spawnPos);
+            const enemy = new Enemy(`enemy_${i}`, this._scene, this._player, spawnPos, 20, 100);
             aiBehavior && enemy.setAIBehavior(aiBehavior);
             this._enemies.push(enemy);
         }
