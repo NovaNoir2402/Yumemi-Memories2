@@ -9,6 +9,7 @@ export class RoofModel{
 
     public static readonly ROOF_THICKNESS = 0.1;
     public static readonly ROOF_HEIGHT_OFFSET = 0.05;
+    public static readonly ROOF_TRANSPARENCY = 0.1;
 
     constructor(name: string, size: Vector3, position: Vector3, color: Color3){
         this.name = name;

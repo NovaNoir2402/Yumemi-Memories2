@@ -35,6 +35,8 @@ import { Exit } from "./exit";
 import { Room } from "./room";
 import { Bullet } from "./bullet";
 import { Entity } from "./entity";
+import { Environment } from "./environment";
+import { RoomModel } from "./roomModel";
 
 export class Player extends Entity  {
     public _scene: Scene;
@@ -42,7 +44,7 @@ export class Player extends Entity  {
     private readonly _input: InputController;
     private _isGrounded: boolean = false;
     private _isOnSlope: boolean = false;
-    private _currentRoom: Room | null = null;
+    private _currentRoom: RoomModel | null = null;
     private _canTeleport: boolean = true;
     private _hasShot: boolean = false;
     private _canShoot: boolean = true;
@@ -84,7 +86,7 @@ export class Player extends Entity  {
     private _canTakeDamage: boolean = true;
     private static readonly DAMAGE_COOLDOWN_MS = 2000;
 
-    constructor(name: string, scene: Scene, input: InputController, room: Room) {
+    constructor(name: string, scene: Scene, input: InputController, room: RoomModel) {
         super(name, scene);
         this._scene = scene;      // ← impératif
         this._input = input;
@@ -307,12 +309,12 @@ export class Player extends Entity  {
         }, Player.TELEPORT_COOLDOWN_MS);
     }
 
-    private _teleportToRoom(room: Room): void {
+    private _teleportToRoom(room: RoomModel, environment: Environment): void {
         this._body.disablePreStep = false;
         this._body.transformNode.position.copyFrom(room.center);
 
-        this._currentRoom?._playerExit();
-        room._playerEnter();
+        environment.playerExit(room);
+        environment.playerEnter(room);
         this._currentRoom = room;
 
         this.camera.setTarget(room.center);
