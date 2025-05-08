@@ -56,7 +56,7 @@ export class Player extends Entity  {
     private static readonly CAMERA_ROTATION_SPEED = Math.PI / 8;
     private static readonly CAMERA_ZOOM_SPEED = 1;
     private static readonly CAMERA_MIN_RADIUS = 0.1;
-    private static readonly CAMERA_MAX_RADIUS = 50;
+    private static readonly CAMERA_MAX_RADIUS = 10;
 
     private static readonly JUMP_FORCE = new Vector3(0, 10, 0);
     private static readonly MOVE_FORCE = 10;
@@ -161,25 +161,57 @@ export class Player extends Entity  {
     private _isZooming = false;
 
     public updateCamera(): void {
-        this.camera.setTarget(this._body.transformNode.position);
+        // 1) On cible toujours le joueur
+        const target = this._body.transformNode.position;
+        this.camera.setTarget(target);
     
+        // 2) On calcule la direction du joueur vers la caméra
+        const direction = this.camera.position.subtract(target).normalize();
+    
+        // 3) On lance un rayon depuis le joueur vers la caméra
+        const ray = new Ray(
+            target,                        // origine = position du joueur
+            direction,                     // vers la caméra
+            Player.CAMERA_MAX_RADIUS       // portée max = portée max autorisée
+        );
+        const pickInfo = this._scene.pickWithRay(
+            ray,
+            mesh => mesh !== this._mesh      // on ignore le corps du joueur
+        );
+    
+        // 4) On détermine la distance souhaitée
+        //    - par défaut, on reste à la distance « normale » CAMERA_Z_OFFSET
+        //    - si on detecte un obstacle, on se place juste devant
+        let targetRadius = Player.CAMERA_Z_OFFSET;
+        if (pickInfo.hit) {
+            targetRadius = Math.max(pickInfo.distance - 0.5, Player.CAMERA_MIN_RADIUS);
+        }
+    
+        // 5) On interpole la radius de manière fluide
+        const smoothingFactor = 0.1;
+        this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
+        this.camera.radius = Math.min(this.camera.radius, Player.CAMERA_MAX_RADIUS);
+    
+        // 6) Rotation fluide autour du joueur
         if (!this._isRotating && this._input.cameraRotation !== 0) {
             const angle = this._input.cameraRotation * Player.CAMERA_ROTATION_SPEED;
             this._smoothCameraRotation(angle);
         }
     
+        // 7) Zoom manuel (molette / touches)
         if (this._input.cameraZoom !== 0) {
             const newBeta = this.camera.beta + this._input.cameraZoom * 0.02;
             this.camera.beta = Math.min(Math.max(newBeta, 0.1), Math.PI / 2.5);
         }
     }
+    
 
     private _smoothCameraRotation(angle: number): void {
         this._isRotating = true;
         const targetAlpha = this.camera.alpha + angle;
         const step = angle / Player.CAMERA_ROTATION_FRAMES;
         let currentFrame = 0;
-
+    
         const interval = setInterval(() => {
             if (currentFrame++ >= Player.CAMERA_ROTATION_FRAMES) {
                 clearInterval(interval);
@@ -301,7 +333,7 @@ export class Player extends Entity  {
             const counterForce = Player.SLOPE_GRAVITY * Math.sin(Player.SLOPE_ANGLE);
             this._body.applyForce(new Vector3(0, counterForce, 0), this._body.getObjectCenterWorld());
         }
-        
+
         if (this._input.jump && this._isGrounded) {
             this._body.applyImpulse(Player.JUMP_FORCE, this._body.getObjectCenterWorld());
             this._isGrounded = false;
