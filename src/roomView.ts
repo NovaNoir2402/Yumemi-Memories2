@@ -9,8 +9,8 @@ import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugi
 
 export class RoomView {
     
-    private readonly room: RoomModel;
     private readonly scene: Scene;
+    private readonly room: RoomModel;
 
     constructor(scene: Scene, room: RoomModel) {
         this.room = room;
@@ -22,6 +22,7 @@ export class RoomView {
         this._createWalls();
         this._createFloor();
         this._createRoof();
+        this._setDoors();
     }
 
     protected _createRoof() {
@@ -82,6 +83,47 @@ export class RoomView {
         }
     }
 
+    protected _setDoors(): void {
+        let doors = this.room.doors;
+        for (let dir = 0; dir < RoomModel.MAX_DOORS; dir++) {
+            if(doors[dir] != null) {
+                let door = doors[dir];
+                const doorMesh = MeshBuilder.CreateBox(
+                    door.name,
+                    {
+                        width: door.size.x,
+                        height: door.size.y,
+                        depth: door.size.z,
+                    },
+                    this.scene
+                );
+                doorMesh.position = door.position;
+                doorMesh.metadata = { isDoor: true }
+                const material = new StandardMaterial(`${door.name}_${dir}_doorMaterial`, this.scene);
+                material.diffuseColor = door.color;
+                doorMesh.material = material;
+                new PhysicsAggregate(doorMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+            }
+        }
+    }
 
-    
+    public setRoofTransparency(alpha: number): void {
+        const roof = this.scene.getMeshByName(`${this.room.name}_roof`);
+        if (roof?.material instanceof StandardMaterial) {
+            roof.material.alpha = alpha;
+        }
+    }
+
+    public setWallsTransparency(alpha: number): void {
+        for (const dir of ["north", "south", "east", "west"]) {
+            const wall = this.scene.getMeshByName(`${this.room.name}_${dir}_wall`);
+            if (wall?.material instanceof StandardMaterial) {
+                wall.material.alpha = alpha;
+            }
+        }
+    }
+
+    public update(): void {
+        this._createRoomMesh();
+    }
 }

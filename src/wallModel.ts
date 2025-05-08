@@ -8,9 +8,9 @@ export class WallModel{
     public readonly position: Vector3;
     public readonly color: Color3;
 
-    public static readonly WALL_HEIGHT: number = 10;
-    public static readonly WALL_THICKNESS: number = 1;
-    public static readonly WALL_TRANSPARENCY: number = 0;
+    public static readonly WALL_HEIGHT = 10;
+    public static readonly WALL_THICKNESS = 1;
+    public static readonly WALL_TRANSPARENCY = 0.5;
     
     constructor(name: string, size: Vector3, position: Vector3, color: Color3) {
         this.name = name;
