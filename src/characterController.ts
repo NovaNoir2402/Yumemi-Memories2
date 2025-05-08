@@ -11,6 +11,10 @@ import {
     Ray,
     ArcRotateCamera,
     Mesh,
+    SceneLoader,
+    AnimationGroup,
+    Matrix,
+    Quaternion
 } from "@babylonjs/core";
 
 import {
@@ -22,14 +26,19 @@ import {
     StackPanel,
 } from "@babylonjs/gui";
 
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
+import "@babylonjs/core/Animations/animatable";
+
 import { InputController } from "./inputController";
 import { Exit } from "./exit";
 import { Room } from "./room";
 import { Bullet } from "./bullet";
 import { Entity } from "./entity";
 
-export class Player extends Entity  {
+export class Player extends Entity {
     public _scene: Scene;
+    private assets: { mesh: Mesh; animationGroups: AnimationGroup[] } | null = null;
     public camera: ArcRotateCamera;
     private readonly _input: InputController;
     private _isGrounded: boolean = false;
@@ -69,7 +78,7 @@ export class Player extends Entity  {
     private static readonly CAMERA_ROTATION_FRAMES = 30;
     private static readonly CAMERA_ROTATION_INTERVAL_MS = 8;
     private static readonly BULLET_DAMAGE = 30;
-    
+
     private static readonly SHOOT_COOLDOWN_MS = 300;
     private _health: number = 100;
     private _canTakeDamage: boolean = true;
@@ -86,28 +95,33 @@ export class Player extends Entity  {
     }
 
     // --- Initialization ---
-    private _initialize(): void {
+    private async _initialize(): Promise<void> {
         const transformNode = new TransformNode("playerBodyTransform", this._scene);
         transformNode.parent = this;
 
-        this._mesh = MeshBuilder.CreateCylinder("playerBody", {
-            diameter: Player.BODY_DIAMETER,
-            height: Player.BODY_HEIGHT
-        }, this._scene);
-        this._mesh.position.y = Player.BODY_Y_POSITION;
-        this._mesh.parent = transformNode;
+        // Load the character model and assets
+        await this._loadCharacterAssets(this._scene);
 
-        const material = new StandardMaterial("playerMaterial", this._scene);
-        material.diffuseColor = Player.BODY_COLOR;
-        this._mesh.material = material;
+        if (this.assets) {
+            // Attach the loaded mesh to the transform node
+            this.assets.mesh.parent = transformNode;
 
-        this._initPhysicsMesh(this._mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
-        this._setupCollisionListeners();
+            // Adjust the position of the collision mesh
+            this.assets.mesh.position.y = Player.BODY_Y_POSITION;
+
+            // Initialize physics for the collision mesh
+            this._initPhysicsMesh(this.assets.mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
+
+            // Set up collision listeners
+            this._setupCollisionListeners();
+        } else {
+            console.error("Failed to load player assets.");
+        }
     }
 
     private _setupHUD(): void {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this._scene);
-    
+
         // Conteneur principal
         const healthContainer = new Rectangle();
         healthContainer.width = "220px";
@@ -117,11 +131,11 @@ export class Player extends Entity  {
         healthContainer.paddingTop = "10px";
         healthContainer.paddingLeft = "10px";
         advancedTexture.addControl(healthContainer);
-    
+
         const stackPanel = new StackPanel();
         stackPanel.isVertical = true;
         healthContainer.addControl(stackPanel);
-    
+
         // Fond de la barre de vie
         this._healthBarBackground = new Rectangle();
         this._healthBarBackground.width = "200px";
@@ -131,7 +145,7 @@ export class Player extends Entity  {
         this._healthBarBackground.thickness = 1;
         this._healthBarBackground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         stackPanel.addControl(this._healthBarBackground);
-    
+
         // Barre de vie rouge (au-dessus du fond)
         this._healthBarForeground = new Rectangle();
         this._healthBarForeground.width = "100%";
@@ -140,7 +154,7 @@ export class Player extends Entity  {
         this._healthBarForeground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         this._healthBarForeground.thickness = 0;
         this._healthBarBackground.addControl(this._healthBarForeground);
-    
+
         // Mise à jour dynamique
         this._scene.registerBeforeRender(() => {
             const percentage = Math.max(0, this._health) / 100;
@@ -161,13 +175,17 @@ export class Player extends Entity  {
     private _isZooming = false;
 
     public updateCamera(): void {
+        if (!this._body) {
+            console.warn("Player body is not initialized yet.");
+            return;
+        }
         this.camera.setTarget(this._body.transformNode.position);
-    
+
         if (!this._isRotating && this._input.cameraRotation !== 0) {
             const angle = this._input.cameraRotation * Player.CAMERA_ROTATION_SPEED;
             this._smoothCameraRotation(angle);
         }
-    
+
         if (this._input.cameraZoom !== 0) {
             const newBeta = this.camera.beta + this._input.cameraZoom * 0.02;
             this.camera.beta = Math.min(Math.max(newBeta, 0.1), Math.PI / 2.5);
@@ -198,15 +216,15 @@ export class Player extends Entity  {
 
     public takeDamage(amount: number): void {
         if (!this._canTakeDamage) return;
-    
+
         this._health -= amount;
         console.log(`Player took ${amount} damage! Remaining health: ${this._health}`);
-    
+
         this._canTakeDamage = false;
         setTimeout(() => {
             this._canTakeDamage = true;
         }, Player.DAMAGE_COOLDOWN_MS);
-    
+
         if (this._health <= 0) {
             this.onDeath();
         }
@@ -239,10 +257,10 @@ export class Player extends Entity  {
 
         observable.add(event => {
             if (event.type !== "COLLISION_STARTED") return;
-        
+
             const otherTransform = event.collidedAgainst?.transformNode;
             if (!otherTransform) return;
-        
+
             const entity = otherTransform.metadata?.entity;
             if (entity && entity._isLethal) {
                 const damage = (entity as any).damage ?? 10;
@@ -284,6 +302,10 @@ export class Player extends Entity  {
 
     // --- Movement & Slope Logic ---
     public update(): void {
+        if (!this._body) {
+            console.warn("Player body is not initialized yet.");
+            return;
+        }
         this._input.update();
         this.updateCamera();
         if (this._input.debug) this.teleportToRoomCenter();
@@ -301,7 +323,7 @@ export class Player extends Entity  {
             const counterForce = Player.SLOPE_GRAVITY * Math.sin(Player.SLOPE_ANGLE);
             this._body.applyForce(new Vector3(0, counterForce, 0), this._body.getObjectCenterWorld());
         }
-        
+
         if (this._input.jump && this._isGrounded) {
             this._body.applyImpulse(Player.JUMP_FORCE, this._body.getObjectCenterWorld());
             this._isGrounded = false;
@@ -314,11 +336,11 @@ export class Player extends Entity  {
         if (this._input.shoot && this._canShoot) {
             this._input.shoot = false;
             this._canShoot = false;
-        
+
             const cameraForward = this.camera.getForwardRay().direction;
             const shootOrigin = this._body.transformNode.position.add(cameraForward.scale(1));
             new Bullet(this._scene, shootOrigin, cameraForward, Player.BULLET_DAMAGE);
-        
+
             setTimeout(() => {
                 this._canShoot = true;
             }, Player.SHOOT_COOLDOWN_MS);
@@ -387,5 +409,50 @@ export class Player extends Entity  {
 
     public get health(): number {
         return this._health;
+    }
+
+    // Load the character model and collision mesh
+    private async _loadCharacterAssets(scene: Scene): Promise<void> {
+        async function loadCharacter(): Promise<{ mesh: Mesh; animationGroups: AnimationGroup[] }> {
+            // Create a collision mesh (invisible box)
+            const outer = MeshBuilder.CreateBox("outer", { width: 2, depth: 1, height: 3 }, scene);
+            outer.isVisible = false;
+            outer.isPickable = false;
+            outer.checkCollisions = true;
+
+            // Move the origin of the box collider to the bottom of the mesh
+            outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
+
+            // Configure collision ellipsoid
+            outer.ellipsoid = new Vector3(1, 1.5, 1);
+            outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+
+            // Rotate the player mesh 180 degrees to face the correct direction
+            outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
+
+            // Import the player model
+            return SceneLoader.ImportMeshAsync(null, "./models/", "test.glb", scene).then((result) => {
+                const root = result.meshes[0];
+                const body = root; // The main player mesh
+                body.parent = outer;
+                body.isPickable = false;
+
+                // Disable picking for all child meshes
+                body.getChildMeshes().forEach((m) => {
+                    m.isPickable = false;
+                });
+
+                // Return the collision mesh and animation groups
+                return {
+                    mesh: outer,
+                    animationGroups: result.animationGroups,
+                };
+            });
+        }
+
+        // Load the character and store the assets
+        return loadCharacter().then((assets) => {
+            this.assets = assets;
+        });
     }
 }
