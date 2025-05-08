@@ -11,7 +11,15 @@ import {
     Ray,
     ArcRotateCamera,
     Mesh,
+    AnimationGroup,
+    Matrix,
+    Quaternion,
+    SceneLoader,
 } from "@babylonjs/core";
+
+import "@babylonjs/loaders/glTF/2.0/glTFLoader";
+import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
+import "@babylonjs/core/Animations/animatable";
 
 import {
     Control,
@@ -39,6 +47,7 @@ export class Player extends Entity  {
     private _hasShot: boolean = false;
     private _canShoot: boolean = true;
     public onDeath?: () => void;
+    public assets: { mesh: Mesh; } | null = null;
 
     private _healthBarBackground: Rectangle;
     private _healthBarForeground: Rectangle;
@@ -48,7 +57,7 @@ export class Player extends Entity  {
     private static readonly BODY_DIAMETER = 1;
     private static readonly BODY_MASS = 1;
     private static readonly BODY_COLOR = new Color3(1, 0, 0); // Red
-    private static readonly BODY_Y_POSITION = 0; // Player.BODY_HEIGHT / 2;
+    private static readonly BODY_Y_POSITION = 0.3; // Player.BODY_HEIGHT / 2;
     private static readonly ANGULAR_DAMPING = 1;
 
     private static readonly CAMERA_HEIGHT = 10;
@@ -77,34 +86,37 @@ export class Player extends Entity  {
 
     constructor(name: string, scene: Scene, input: InputController, room: Room) {
         super(name, scene);
+        this._scene = scene;      // ← impératif
         this._input = input;
         this._currentRoom = room;
-
-        this._initialize();
-        this._setupCamera();
-        this._setupHUD();
-    }
+      
+        // On attend la fin de l'initialisation avant de monter le reste
+        this._initialize().then(() => {
+          this._setupCamera();
+          this._setupHUD();
+        });
+      }
 
     // --- Initialization ---
-    private _initialize(): void {
+    private async _initialize(): Promise<void> {
+        // maintenant this._scene est défini, donc :
         const transformNode = new TransformNode("playerBodyTransform", this._scene);
         transformNode.parent = this;
-
-        this._mesh = MeshBuilder.CreateCylinder("playerBody", {
-            diameter: Player.BODY_DIAMETER,
-            height: Player.BODY_HEIGHT
-        }, this._scene);
-        this._mesh.position.y = Player.BODY_Y_POSITION;
-        this._mesh.parent = transformNode;
-
-        const material = new StandardMaterial("playerMaterial", this._scene);
-        material.diffuseColor = Player.BODY_COLOR;
-        this._mesh.material = material;
-
-        this._initPhysicsMesh(this._mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
+      
+        await this._loadCharacterAssets(this._scene);
+      
+        if (!this.assets) {
+          console.error("Failed to load player assets.");
+          return;
+        }
+      
+        // on attache ton collider correctement
+        this.assets.mesh.parent = transformNode;
+        this.assets.mesh.position.y = Player.BODY_Y_POSITION;
+        this._initPhysicsMesh(this.assets.mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
         this._setupCollisionListeners();
-    }
-
+      }
+    
     private _setupHUD(): void {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this._scene);
     
@@ -189,7 +201,7 @@ export class Player extends Entity  {
     
         // 5) On interpole la radius de manière fluide
         const smoothingFactor = 0.1;
-        this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
+        //this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
         this.camera.radius = Math.min(this.camera.radius, Player.CAMERA_MAX_RADIUS);
     
         // 6) Rotation fluide autour du joueur
@@ -316,6 +328,10 @@ export class Player extends Entity  {
 
     // --- Movement & Slope Logic ---
     public update(): void {
+        if (!this._body) {
+            console.warn("Player body is not initialized yet.");
+            return;
+        }
         this._input.update();
         this.updateCamera();
         if (this._input.debug) this.teleportToRoomCenter();
@@ -419,5 +435,49 @@ export class Player extends Entity  {
 
     public get health(): number {
         return this._health;
+    }
+
+    private async _loadCharacterAssets(scene: Scene): Promise<void> {
+        async function loadCharacter(): Promise<{ mesh: Mesh; animationGroups: AnimationGroup[] }> {
+            // Create a collision mesh (invisible box)
+            const outer = MeshBuilder.CreateBox("outer", { width: 2, depth: 1, height: 3 }, scene);
+            outer.isVisible = false;
+            outer.isPickable = false;
+            outer.checkCollisions = true;
+
+            // Move the origin of the box collider to the bottom of the mesh
+            outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
+
+            // Configure collision ellipsoid
+            outer.ellipsoid = new Vector3(1, 1.5, 1);
+            outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+
+            // Rotate the player mesh 180 degrees to face the correct direction
+            outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
+
+            // Import the player model
+            return SceneLoader.ImportMeshAsync(null, "./models/", "character-human.glb", scene).then((result) => {
+                const root = result.meshes[0];
+                const body = root; // The main player mesh
+                body.parent = outer;
+                body.isPickable = false;
+
+                // Disable picking for all child meshes
+                body.getChildMeshes().forEach((m) => {
+                    m.isPickable = false;
+                });
+
+                // Return the collision mesh and animation groups
+                return {
+                    mesh: outer,
+                    animationGroups: result.animationGroups,
+                };
+            });
+        }
+
+        // Load the character and store the assets
+        return loadCharacter().then((assets) => {
+            this.assets = assets;
+        });
     }
 }
