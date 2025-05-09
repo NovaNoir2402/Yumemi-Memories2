@@ -1,7 +1,7 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
 import { Enemy } from "./enemy";
 import { Room } from "../../room";
-import { Player } from "../player/characterController";
+import { Player } from "../player/player";
 
 export class EnemyManager {
     private _scene: Scene;

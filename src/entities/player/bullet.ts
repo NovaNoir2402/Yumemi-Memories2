@@ -12,9 +12,6 @@ import {
     PhysicsShapeMesh,
     PhysicsShapeSphere,
 } from "@babylonjs/core";
-import { InputController } from "./inputController";
-import { Exit } from "../../exit";
-import { Room } from "../../room";
 import { Entity } from "../entity";
 
 /**
@@ -22,7 +19,7 @@ import { Entity } from "../entity";
  */
 export class Bullet extends Entity {
     public _scene: Scene;
-    protected _mesh: Mesh;
+    public _mesh: Mesh;
     public _body: PhysicsBody;
     private damage: number;
 

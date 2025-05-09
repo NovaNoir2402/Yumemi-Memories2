@@ -11,8 +11,8 @@ import {
 } from "@babylonjs/core";
 
 export abstract class Entity extends TransformNode {
-    protected _mesh: Mesh;
-    protected _body: PhysicsBody;
+    public _mesh: Mesh;
+    public _body: PhysicsBody;
     public _isLethal: boolean;
 
     constructor(name: string, scene: Scene) {
@@ -20,7 +20,7 @@ export abstract class Entity extends TransformNode {
         this._isLethal = false;
     }
 
-    protected _initPhysicsMesh(
+    public _initPhysicsMesh(
         mesh: Mesh,
         motionType: PhysicsMotionType,
         mass: number,

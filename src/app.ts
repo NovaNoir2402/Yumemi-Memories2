@@ -6,8 +6,8 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Color4, Vector3 } from "@babylonjs/core/Maths";
 import { Engine } from "@babylonjs/core/Engines";
-import { InputController } from "./entities/player/inputController";
-import { Player } from "./entities/player/characterController";
+import { InputController } from "./controller/inputController";
+import { Player } from "./entities/player/player";
 import { EnemyManager } from "./entities/enemy/enemyManager";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 // Constants
@@ -140,11 +140,11 @@ class App {
 
         const environment = new Environment(scene);
         const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        // const room2 = environment.createRoom("Room2", ROOM_SIZE);
-        // environment.createExit(room1, room2, "south");
+        const room2 = environment.createRoom("Room2", ROOM_SIZE);
+        environment.createExit(room1, room2, "south");
 
         const inputController = new InputController(scene);
-        const player = new Player("player", scene, inputController, room1);
+        const player = new Player("player", scene, room1, environment);
         environment.playerEnter(room1);
 
         const enemyManager = new EnemyManager(scene, player);

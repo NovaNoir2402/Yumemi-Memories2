@@ -8,7 +8,6 @@ import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
 import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 
 export class RoomView {
-    
     private readonly scene: Scene;
     private readonly room: RoomModel;
 
@@ -28,12 +27,12 @@ export class RoomView {
     protected _createRoof() {
         let roof = this.room.roof;
         const roofMesh = MeshBuilder.CreateBox(
-            roof.name, 
+            roof.name,
             {
                 width: roof.size.x,
                 height: RoofModel.ROOF_THICKNESS,
                 depth: roof.size.z,
-            }, 
+            },
             this.scene
         );
         roofMesh.position = roof.position;
@@ -45,7 +44,7 @@ export class RoomView {
 
     protected _createFloor(): void {
         let floor = this.room.floor;
-        const floorMesh  = MeshBuilder.CreateBox(
+        const floorMesh = MeshBuilder.CreateBox(
             floor.name,
             {
                 width: floor.size.x,
@@ -58,8 +57,8 @@ export class RoomView {
         const material = new StandardMaterial(`${floor.name}_floorMaterial`, this.scene);
         material.diffuseColor = floor.color;
         floorMesh.material = material;
-        floorMesh.metadata = { isGround: true }
-        new PhysicsAggregate(floorMesh, PhysicsShapeType.BOX, { mass: 0}, this.scene)
+        floorMesh.metadata = { isGround: true };
+        new PhysicsAggregate(floorMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
     }
 
     protected _createWalls(): void {
@@ -70,7 +69,7 @@ export class RoomView {
                 {
                     width: wall.size.x,
                     height: wall.size.y,
-                    depth: wall.size.z
+                    depth: wall.size.z,
                 },
                 this.scene
             );
@@ -79,14 +78,14 @@ export class RoomView {
             material.diffuseColor = wall.color;
             wallMesh.material = material;
             wallMesh.metadata = { isObstacle: true };
-            new PhysicsAggregate(wallMesh, PhysicsShapeType.BOX, { mass: 0}, this.scene)
+            new PhysicsAggregate(wallMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
         }
     }
 
     protected _setDoors(): void {
         let doors = this.room.doors;
         for (let dir = 0; dir < RoomModel.MAX_DOORS; dir++) {
-            if(doors[dir] != null) {
+            if (doors[dir] != null) {
                 let door = doors[dir];
                 const doorMesh = MeshBuilder.CreateBox(
                     door.name,
@@ -98,7 +97,7 @@ export class RoomView {
                     this.scene
                 );
                 doorMesh.position = door.position;
-                doorMesh.metadata = { isDoor: true }
+                doorMesh.metadata = { isDoor: true, connectedRoom: door.connectedRoom };
                 const material = new StandardMaterial(`${door.name}_${dir}_doorMaterial`, this.scene);
                 material.diffuseColor = door.color;
                 doorMesh.material = material;
@@ -125,5 +124,23 @@ export class RoomView {
 
     public update(): void {
         this._createRoomMesh();
+    }
+
+    public dispose(): void {
+        const roof = this.scene.getMeshByName(`${this.room.name}_roof`);
+        roof?.dispose();
+
+        const floor = this.scene.getMeshByName(`${this.room.name}_floor`);
+        floor?.dispose();
+
+        for (const dir of ["north", "south", "east", "west"]) {
+            const wall = this.scene.getMeshByName(`${this.room.name}_${dir}_wall`);
+            wall?.dispose();
+        }
+        
+        for (let dir = 0; dir < RoomModel.MAX_DOORS; dir++) {
+            const door = this.scene.getMeshByName(`${this.room.name}_${dir}_door`);
+            door?.dispose();
+        }
     }
 }
