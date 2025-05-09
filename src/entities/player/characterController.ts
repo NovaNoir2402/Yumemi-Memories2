@@ -23,12 +23,12 @@ import {
 } from "@babylonjs/gui";
 
 import { InputController } from "./inputController";
-import { Exit } from "./exit";
-import { Room } from "./room";
+import { Exit } from "../../exit";
+import { Room } from "../../room";
 import { Bullet } from "./bullet";
-import { Entity } from "./entity";
-import { Environment } from "./environment";
-import { RoomModel } from "./roomModel";
+import { Entity } from "../entity";
+import { Environment } from "../../environment";
+import { RoomModel } from "../../model/roomModel";
 
 export class Player extends Entity  {
     public _scene: Scene;
@@ -105,6 +105,9 @@ export class Player extends Entity  {
 
         this._initPhysicsMesh(this._mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
         this._setupCollisionListeners();
+        // Sets the player to be 1 unit above the ground
+        this._body.disablePreStep = false;
+        this._body.transformNode.position.y = Player.BODY_Y_POSITION + 1;
     }
 
     private _setupHUD(): void {
@@ -264,12 +267,12 @@ export class Player extends Entity  {
             }
         });
 
-        observable.add(event => {
-            const meta = event.collidedAgainst?.transformNode?.metadata;
-            if (event.type === "COLLISION_STARTED" && meta?.isExit) {
-                this._handleExitCollision(meta.exit);
-            }
-        });
+        // observable.add(event => {
+        //     const meta = event.collidedAgainst?.transformNode?.metadata;
+        //     if (event.type === "COLLISION_STARTED" && meta?.isExit) {
+        //         this._handleExitCollision(meta.exit);
+        //     }
+        // });
 
         observable.add(event => {
             if (event.type !== "COLLISION_STARTED") return;
@@ -285,42 +288,41 @@ export class Player extends Entity  {
         });
     }
 
-    private _handleExitCollision(exit: Exit): void {
-        if (!this._canTeleport) return;
+    // private _handleExitCollision(exit: Exit): void {
+    //     if (!this._canTeleport) return;
 
-        const targetRoom = (exit.room1.name === this._currentRoom?.name) ? exit.room2 : exit.room1;
-        this._teleportToRoom(targetRoom);
+    //     const targetRoom = (exit.room1.name === this._currentRoom?.name) ? exit.room2 : exit.room1;
+    //     this._teleportToRoom(targetRoom);
 
-        this._canTeleport = false;
-        setTimeout(() => {
-            this._canTeleport = true;
-        }, Player.TELEPORT_COOLDOWN_MS);
-    }
+    //     this._canTeleport = false;
+    //     setTimeout(() => {
+    //         this._canTeleport = true;
+    //     }, Player.TELEPORT_COOLDOWN_MS);
+    // }
 
-    private _teleportToRoom(room: RoomModel, environment: Environment): void {
-        this._body.disablePreStep = false;
-        this._body.transformNode.position.copyFrom(room.center);
+    // private _teleportToRoom(room: RoomModel, environment: Environment): void {
+    //     this._body.disablePreStep = false;
+    //     this._body.transformNode.position.copyFrom(room.center);
 
-        environment.playerExit(room);
-        environment.playerEnter(room);
-        this._currentRoom = room;
+    //     environment.playerExit(room);
+    //     environment.playerEnter(room);
+    //     this._currentRoom = room;
 
-        this.camera.setTarget(room.center);
-        this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
-    }
+    //     this.camera.setTarget(room.center);
+    //     this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
+    // }
 
-    public teleportToRoomCenter(): void {
-        if (!this._currentRoom) return;
+    // public teleportToRoomCenter(): void {
+    //     if (!this._currentRoom) return;
 
-        this._body.disablePreStep = false;
-        this._body.transformNode.position.copyFrom(this._currentRoom.center);
-    }
+    //     this._body.disablePreStep = false;
+    //     this._body.transformNode.position.copyFrom(this._currentRoom.center);
+    // }
 
     // --- Movement & Slope Logic ---
     public update(): void {
         this._input.update();
         this.updateCamera();
-        if (this._input.debug) this.teleportToRoomCenter();
 
         this._checkIfOnSlope();
 

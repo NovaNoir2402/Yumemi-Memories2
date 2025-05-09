@@ -6,8 +6,8 @@ import {
     Scene,
     IPhysicsCollisionEvent
 } from "@babylonjs/core";
-import { Entity } from "./entity";
-import { Player } from "./characterController"; // Or wherever the Player class is
+import { Entity } from "../entity";
+import { Player } from "../player/characterController"; // Or wherever the Player class is
 
 export class Enemy extends Entity {
     private readonly _speed: number = 4;

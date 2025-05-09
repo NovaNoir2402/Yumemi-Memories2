@@ -1,10 +1,10 @@
 import { Scene, Vector3 } from "@babylonjs/core";
 import { Exit } from "./exit";
-import { RoomModel } from "./roomModel";
-import { DoorModel } from "./doorModel";
-import { RoomView } from "./roomView";
-import { RoofModel } from "./roofModel";
-import { WallModel } from "./wallModel";
+import { RoomModel } from "./model/roomModel";
+import { DoorModel } from "./model/doorModel";
+import { RoomView } from "./view/roomView";
+import { RoofModel } from "./model/roofModel";
+import { WallModel } from "./model/wallModel";
 
 export class Environment {
     private readonly _scene: Scene;

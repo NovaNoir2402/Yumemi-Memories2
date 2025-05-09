@@ -6,9 +6,9 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Color4, Vector3 } from "@babylonjs/core/Maths";
 import { Engine } from "@babylonjs/core/Engines";
-import { InputController } from "./inputController";
-import { Player } from "./characterController";
-import { EnemyManager } from "./enemyManager";
+import { InputController } from "./entities/player/inputController";
+import { Player } from "./entities/player/characterController";
+import { EnemyManager } from "./entities/enemy/enemyManager";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
 // Constants
 const CANVAS_ID = "gameCanvas";
@@ -23,7 +23,7 @@ const LIGHT_INTENSITY_CUTSCENE = 0.7;
 
 const ROOM_SIZE = new Vector3(40, 3, 40);
 const ROOM1_POSITION = new Vector3(0, 0, 0);
-const ROOM2_POSITION = new Vector3(0, 0, 45);
+// const ROOM2_POSITION = new Vector3(0, 0, 45);
 const ENEMY_COUNT_ROOM1 = 2;
 
 const BUTTON_WIDTH = 0.2;
@@ -140,15 +140,15 @@ class App {
 
         const environment = new Environment(scene);
         const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        const room2 = environment.createRoom("Room2", ROOM_SIZE);
-        environment.createExit(room1, room2, "south");
+        // const room2 = environment.createRoom("Room2", ROOM_SIZE);
+        // environment.createExit(room1, room2, "south");
 
         const inputController = new InputController(scene);
         const player = new Player("player", scene, inputController, room1);
         environment.playerEnter(room1);
 
         const enemyManager = new EnemyManager(scene, player);
-        enemyManager.spawnEnemies(room1, 1); // Spawn 1 enemy in room1
+        // enemyManager.spawnEnemies(room1, 1); // Spawn 1 enemy in room1
         // enemyManager.toggleAllEnemies(); // Deactivate all enemies
     
         // Add a lose game button
