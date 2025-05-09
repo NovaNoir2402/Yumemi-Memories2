@@ -31,12 +31,12 @@ import {
 } from "@babylonjs/gui";
 
 import { InputController } from "./inputController";
-import { Exit } from "./exit";
-import { Room } from "./room";
+import { Exit } from "../../exit";
+import { Room } from "../../room";
 import { Bullet } from "./bullet";
-import { Entity } from "./entity";
-import { Environment } from "./environment";
-import { RoomModel } from "./roomModel";
+import { Entity } from "../entity";
+import { Environment } from "../../environment";
+import { RoomModel } from "../../model/roomModel";
 
 export class Player extends Entity  {
     public _scene: Scene;
@@ -59,15 +59,15 @@ export class Player extends Entity  {
     private static readonly BODY_DIAMETER = 1;
     private static readonly BODY_MASS = 1;
     private static readonly BODY_COLOR = new Color3(1, 0, 0); // Red
-    private static readonly BODY_Y_POSITION = 0.3; // Player.BODY_HEIGHT / 2;
+    private static readonly BODY_Y_POSITION = 0; // Player.BODY_HEIGHT / 2;
     private static readonly ANGULAR_DAMPING = 1;
 
-    private static readonly CAMERA_HEIGHT = 10;
+    private static readonly CAMERA_HEIGHT = 2;
     private static readonly CAMERA_Z_OFFSET = 20;
     private static readonly CAMERA_ROTATION_SPEED = Math.PI / 8;
     private static readonly CAMERA_ZOOM_SPEED = 1;
     private static readonly CAMERA_MIN_RADIUS = 0.1;
-    private static readonly CAMERA_MAX_RADIUS = 10;
+    private static readonly CAMERA_MAX_RADIUS = 15;
 
     private static readonly JUMP_FORCE = new Vector3(0, 10, 0);
     private static readonly MOVE_FORCE = 10;
@@ -111,14 +111,20 @@ export class Player extends Entity  {
           console.error("Failed to load player assets.");
           return;
         }
+
+        
       
         // on attache ton collider correctement
         this.assets.mesh.parent = transformNode;
         this.assets.mesh.position.y = Player.BODY_Y_POSITION;
+        
         this._initPhysicsMesh(this.assets.mesh, PhysicsMotionType.DYNAMIC, Player.BODY_MASS, Player.ANGULAR_DAMPING);
         this._setupCollisionListeners();
-      }
-    
+        // Sets the player to be 1 unit above the ground
+        this._body.disablePreStep = false;
+        this._body.transformNode.position.y = Player.BODY_Y_POSITION + 1;
+    }
+
     private _setupHUD(): void {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this._scene);
     
@@ -163,7 +169,7 @@ export class Player extends Entity  {
     }
 
     private _setupCamera(): void {
-        this.camera = new ArcRotateCamera("Camera", 0, 0, 0, Vector3.Zero(), this._scene);
+        this.camera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 4, Player.CAMERA_Z_OFFSET, Vector3.Zero(), this._scene);
         this.camera.setPosition(new Vector3(0, Player.CAMERA_HEIGHT, Player.CAMERA_Z_OFFSET));
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 0;
@@ -176,7 +182,7 @@ export class Player extends Entity  {
 
     public updateCamera(): void {
         // 1) On cible toujours le joueur
-        const target = this._body.transformNode.position;
+        const target = this._body.transformNode.position.add(new Vector3(2, Player.CAMERA_HEIGHT, 0));
         this.camera.setTarget(target);
     
         // 2) On calcule la direction du joueur vers la caméra
@@ -203,7 +209,7 @@ export class Player extends Entity  {
     
         // 5) On interpole la radius de manière fluide
         const smoothingFactor = 0.1;
-        //this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
+        this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
         this.camera.radius = Math.min(this.camera.radius, Player.CAMERA_MAX_RADIUS);
     
         // 6) Rotation fluide autour du joueur
@@ -212,10 +218,10 @@ export class Player extends Entity  {
             this._smoothCameraRotation(angle);
         }
     
-        // 7) Zoom manuel (molette / touches)
+        // 7) Zoom manuel (molette / touches
         if (this._input.cameraZoom !== 0) {
             const newBeta = this.camera.beta + this._input.cameraZoom * 0.02;
-            this.camera.beta = Math.min(Math.max(newBeta, 0.1), Math.PI / 2.5);
+            this.camera.beta = Math.min(Math.max(newBeta, 0.5), Math.PI / 2.5);
         }
     }
     
@@ -276,12 +282,12 @@ export class Player extends Entity  {
             }
         });
 
-        observable.add(event => {
-            const meta = event.collidedAgainst?.transformNode?.metadata;
-            if (event.type === "COLLISION_STARTED" && meta?.isExit) {
-                this._handleExitCollision(meta.exit);
-            }
-        });
+        // observable.add(event => {
+        //     const meta = event.collidedAgainst?.transformNode?.metadata;
+        //     if (event.type === "COLLISION_STARTED" && meta?.isExit) {
+        //         this._handleExitCollision(meta.exit);
+        //     }
+        // });
 
         observable.add(event => {
             if (event.type !== "COLLISION_STARTED") return;
@@ -297,36 +303,36 @@ export class Player extends Entity  {
         });
     }
 
-    private _handleExitCollision(exit: Exit): void {
-        if (!this._canTeleport) return;
+    // private _handleExitCollision(exit: Exit): void {
+    //     if (!this._canTeleport) return;
 
-        const targetRoom = (exit.room1.name === this._currentRoom?.name) ? exit.room2 : exit.room1;
-        this._teleportToRoom(targetRoom);
+    //     const targetRoom = (exit.room1.name === this._currentRoom?.name) ? exit.room2 : exit.room1;
+    //     this._teleportToRoom(targetRoom);
 
-        this._canTeleport = false;
-        setTimeout(() => {
-            this._canTeleport = true;
-        }, Player.TELEPORT_COOLDOWN_MS);
-    }
+    //     this._canTeleport = false;
+    //     setTimeout(() => {
+    //         this._canTeleport = true;
+    //     }, Player.TELEPORT_COOLDOWN_MS);
+    // }
 
-    private _teleportToRoom(room: RoomModel, environment: Environment): void {
-        this._body.disablePreStep = false;
-        this._body.transformNode.position.copyFrom(room.center);
+    // private _teleportToRoom(room: RoomModel, environment: Environment): void {
+    //     this._body.disablePreStep = false;
+    //     this._body.transformNode.position.copyFrom(room.center);
 
-        environment.playerExit(room);
-        environment.playerEnter(room);
-        this._currentRoom = room;
+    //     environment.playerExit(room);
+    //     environment.playerEnter(room);
+    //     this._currentRoom = room;
 
-        this.camera.setTarget(room.center);
-        this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
-    }
+    //     this.camera.setTarget(room.center);
+    //     this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
+    // }
 
-    public teleportToRoomCenter(): void {
-        if (!this._currentRoom) return;
+    // public teleportToRoomCenter(): void {
+    //     if (!this._currentRoom) return;
 
-        this._body.disablePreStep = false;
-        this._body.transformNode.position.copyFrom(this._currentRoom.center);
-    }
+    //     this._body.disablePreStep = false;
+    //     this._body.transformNode.position.copyFrom(this._currentRoom.center);
+    // }
 
     // --- Movement & Slope Logic ---
     public update(): void {
@@ -336,7 +342,6 @@ export class Player extends Entity  {
         }
         this._input.update();
         this.updateCamera();
-        if (this._input.debug) this.teleportToRoomCenter();
 
         this._checkIfOnSlope();
 

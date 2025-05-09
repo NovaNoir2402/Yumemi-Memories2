@@ -5,7 +5,7 @@ export class FloorModel{
     public readonly name: string;
     public readonly size: Vector3;
     public readonly position: Vector3;
-    public readonly color: Color3;
+    public readonly color: Color3 = new Color3(1, 1, 1);
 
     public static readonly FLOOR_THICKNESS = 0.1;
     public static readonly FLOOR_DEPTH_OFFSET = -0.05;

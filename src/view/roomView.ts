@@ -1,6 +1,6 @@
-import { RoomModel } from "./roomModel";
-import { FloorModel } from "./floorModel";
-import { RoofModel } from "./roofModel";
+import { RoomModel } from "../model/roomModel";
+import { FloorModel } from "../model/floorModel";
+import { RoofModel } from "../model/roofModel";
 import { Scene } from "@babylonjs/core/scene";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
@@ -107,14 +107,14 @@ export class RoomView {
         }
     }
 
-    public setRoofTransparency(alpha: number): void {
+    public _setRoofTransparency(alpha: number): void {
         const roof = this.scene.getMeshByName(`${this.room.name}_roof`);
         if (roof?.material instanceof StandardMaterial) {
             roof.material.alpha = alpha;
         }
     }
 
-    public setWallsTransparency(alpha: number): void {
+    public _setWallsTransparency(alpha: number): void {
         for (const dir of ["north", "south", "east", "west"]) {
             const wall = this.scene.getMeshByName(`${this.room.name}_${dir}_wall`);
             if (wall?.material instanceof StandardMaterial) {

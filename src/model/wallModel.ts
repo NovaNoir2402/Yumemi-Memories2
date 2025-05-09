@@ -6,7 +6,7 @@ export class WallModel{
     public readonly name: string;
     public readonly size: Vector3;
     public readonly position: Vector3;
-    public readonly color: Color3;
+    public readonly color: Color3 = new Color3(1, 1, 1);
 
     public static readonly WALL_HEIGHT = 10;
     public static readonly WALL_THICKNESS = 1;
@@ -18,8 +18,5 @@ export class WallModel{
         this.position = position;
         this.color = color;
     }
-
-
-
 }
 

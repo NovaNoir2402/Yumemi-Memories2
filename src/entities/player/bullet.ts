@@ -13,9 +13,9 @@ import {
     PhysicsShapeSphere,
 } from "@babylonjs/core";
 import { InputController } from "./inputController";
-import { Exit } from "./exit";
-import { Room } from "./room";
-import { Entity } from "./entity";
+import { Exit } from "../../exit";
+import { Room } from "../../room";
+import { Entity } from "../entity";
 
 /**
  * Bullet projectile class.

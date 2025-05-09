@@ -7,7 +7,7 @@ export class DoorModel {
     public readonly name: string;
     public readonly size: Vector3;
     public readonly position: Vector3;
-    public readonly color: Color3;
+    public readonly color: Color3 = new Color3(1, 1, 1);
     private readonly isHorizontal: boolean;
 
     public static readonly NORTH = 0;
@@ -40,7 +40,7 @@ export class DoorModel {
             default:
                 throw new Error(`Invalid direction: ${direction}`);
         }
+        this.color = color;
     }
-
 
 }
