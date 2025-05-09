@@ -40,6 +40,7 @@ export class Player extends Entity  {
     private _canTeleport: boolean = true;
     private _hasShot: boolean = false;
     private _canShoot: boolean = true;
+    private readonly _environment: Environment;
     public onDeath?: () => void;
 
     private _healthBarBackground: Rectangle;
@@ -77,10 +78,11 @@ export class Player extends Entity  {
     private _canTakeDamage: boolean = true;
     private static readonly DAMAGE_COOLDOWN_MS = 2000;
 
-    constructor(name: string, scene: Scene, input: InputController, room: RoomModel) {
+    constructor(name: string, scene: Scene, input: InputController, room: RoomModel, environment: Environment) {
         super(name, scene);
         this._input = input;
         this._currentRoom = room;
+        this._environment = environment;
 
         this._initialize();
         this._setupCamera();
@@ -267,12 +269,12 @@ export class Player extends Entity  {
             }
         });
 
-        // observable.add(event => {
-        //     const meta = event.collidedAgainst?.transformNode?.metadata;
-        //     if (event.type === "COLLISION_STARTED" && meta?.isExit) {
-        //         this._handleExitCollision(meta.exit);
-        //     }
-        // });
+        observable.add(event => {
+            const meta = event.collidedAgainst?.transformNode?.metadata;
+            if (event.type === "COLLISION_STARTED" && meta?.isDoor) {
+                this._handleDoorCollision(meta.connectedRoom);
+            }
+        });
 
         observable.add(event => {
             if (event.type !== "COLLISION_STARTED") return;
@@ -288,29 +290,28 @@ export class Player extends Entity  {
         });
     }
 
-    // private _handleExitCollision(exit: Exit): void {
-    //     if (!this._canTeleport) return;
+    private _handleDoorCollision(targetRoom: RoomModel): void {
+        if (!this._canTeleport) return;
 
-    //     const targetRoom = (exit.room1.name === this._currentRoom?.name) ? exit.room2 : exit.room1;
-    //     this._teleportToRoom(targetRoom);
+        this._teleportToRoom(targetRoom, this._environment);
 
-    //     this._canTeleport = false;
-    //     setTimeout(() => {
-    //         this._canTeleport = true;
-    //     }, Player.TELEPORT_COOLDOWN_MS);
-    // }
+        this._canTeleport = false;
+        setTimeout(() => {
+            this._canTeleport = true;
+        }, Player.TELEPORT_COOLDOWN_MS);
+    }
 
-    // private _teleportToRoom(room: RoomModel, environment: Environment): void {
-    //     this._body.disablePreStep = false;
-    //     this._body.transformNode.position.copyFrom(room.center);
+    private _teleportToRoom(room: RoomModel, environment: Environment): void {
+        this._body.disablePreStep = false;
+        this._body.transformNode.position.copyFrom(new Vector3(0, 1, 0));
 
-    //     environment.playerExit(room);
-    //     environment.playerEnter(room);
-    //     this._currentRoom = room;
+        environment.playerExit(room);
+        environment.playerEnter(room);
+        this._currentRoom = room;
 
-    //     this.camera.setTarget(room.center);
-    //     this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
-    // }
+        // this.camera.setTarget(room.center);
+        // this.camera.position = new Vector3(room.center.x, room.center.y + Player.CAMERA_HEIGHT, room.center.z + Player.CAMERA_Z_OFFSET);
+    }
 
     // public teleportToRoomCenter(): void {
     //     if (!this._currentRoom) return;

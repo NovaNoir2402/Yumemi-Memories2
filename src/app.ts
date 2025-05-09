@@ -140,11 +140,11 @@ class App {
 
         const environment = new Environment(scene);
         const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        // const room2 = environment.createRoom("Room2", ROOM_SIZE);
-        // environment.createExit(room1, room2, "south");
+        const room2 = environment.createRoom("Room2", ROOM_SIZE);
+        environment.createExit(room1, room2, "south");
 
         const inputController = new InputController(scene);
-        const player = new Player("player", scene, inputController, room1);
+        const player = new Player("player", scene, inputController, room1, environment);
         environment.playerEnter(room1);
 
         const enemyManager = new EnemyManager(scene, player);

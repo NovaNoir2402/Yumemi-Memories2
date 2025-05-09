@@ -62,8 +62,8 @@ export class RoomModel{
         );
     }
 
-    public addDoor(direction: 0 | 1 | 2 | 3) {
-        this.doors[direction] = new DoorModel(this.name, direction, new Color3(1, 0, 0));
+    public addDoor(direction: 0 | 1 | 2 | 3, connectedRoom: RoomModel) {
+        this.doors[direction] = new DoorModel(this, direction, new Color3(1, 0, 0), connectedRoom);
     }
 
 }
