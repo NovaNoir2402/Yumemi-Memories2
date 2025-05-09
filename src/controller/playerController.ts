@@ -134,7 +134,6 @@ export class PlayerController {
         this.player._body.disablePreStep = false;
         this.player._body.transformNode.position.copyFrom(new Vector3(0, 1, 0));
 
-        environment.playerExit(room);
         environment.playerEnter(room);
         this.currentRoom = room;
 

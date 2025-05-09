@@ -102,15 +102,15 @@ export class Environment {
         this._currentRoomView.update();
     }
 
-    public playerExit(room: RoomModel): void {
-        console.log(`Player exited room: ${room.name}`);
+    // public playerExit(room: RoomModel): void {
+    //     console.log(`Player exited room: ${room.name}`);
 
-        // Reset transparency for the roof and walls
-        // if (this._currentRoomView) {
-        //     this._currentRoomView._setRoofTransparency(Environment.FULL_OPACITY);
-        //     this._currentRoomView._setWallsTransparency(Environment.FULL_OPACITY);
-        //     this._currentRoomView.update();
-        // }
-    }
+    //     // Reset transparency for the roof and walls
+    //     // if (this._currentRoomView) {
+    //     //     this._currentRoomView._setRoofTransparency(Environment.FULL_OPACITY);
+    //     //     this._currentRoomView._setWallsTransparency(Environment.FULL_OPACITY);
+    //     //     this._currentRoomView.update();
+    //     // }
+    // }
 
 }

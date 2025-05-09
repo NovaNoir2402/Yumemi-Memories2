@@ -22,8 +22,7 @@ const LIGHT_INTENSITY_LOSE = 0.5;
 const LIGHT_INTENSITY_CUTSCENE = 0.7;
 
 const ROOM_SIZE = new Vector3(40, 3, 40);
-const ROOM1_POSITION = new Vector3(0, 0, 0);
-// const ROOM2_POSITION = new Vector3(0, 0, 45);
+const ROOM_SIZE_2 = new Vector3(50, 3, 100);
 const ENEMY_COUNT_ROOM1 = 2;
 
 const BUTTON_WIDTH = 0.2;
@@ -140,8 +139,8 @@ class App {
 
         const environment = new Environment(scene);
         const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        const room2 = environment.createRoom("Room2", ROOM_SIZE);
-        environment.createExit(room1, room2, "south");
+        const room2 = environment.createRoom("Room2", ROOM_SIZE_2);
+        environment.createExit(room1, room2, "north");
 
         const inputController = new InputController(scene);
         const player = new Player("player", scene, room1, environment);

@@ -127,20 +127,22 @@ export class RoomView {
     }
 
     public dispose(): void {
-        const roof = this.scene.getMeshByName(`${this.room.name}_roof`);
-        roof?.dispose();
+        for (let i = 0; i < this.scene.meshes.length; i++) {
+            const mesh = this.scene.meshes[i];
+            console.log(`Disposing mesh: ${mesh.name}`);
 
-        const floor = this.scene.getMeshByName(`${this.room.name}_floor`);
-        floor?.dispose();
-
-        for (const dir of ["north", "south", "east", "west"]) {
-            const wall = this.scene.getMeshByName(`${this.room.name}_${dir}_wall`);
-            wall?.dispose();
-        }
-        
-        for (let dir = 0; dir < RoomModel.MAX_DOORS; dir++) {
-            const door = this.scene.getMeshByName(`${this.room.name}_${dir}_door`);
-            door?.dispose();
+            // Check if the mesh corresponds to the room's roof, floor, walls, or doors
+            if (
+                mesh.name === this.room.roof.name ||
+                mesh.name === this.room.floor.name ||
+                this.room.walls.some(wall => wall.name === mesh.name) ||
+                Object.values(this.room.doors).some(door => door?.name === mesh.name)
+            ) {
+                mesh.dispose();
+                i--; // Adjust index since the array is modified after disposal
+            } else {
+                console.warn(`Skipping unrelated mesh: ${mesh.name}`);
+            }
         }
     }
 }
