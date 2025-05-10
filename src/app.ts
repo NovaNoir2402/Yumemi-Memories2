@@ -138,13 +138,17 @@ class App {
         this._addCameraAndLight(scene, "GameCamera");
 
         const environment = new Environment(scene);
-        const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        const room2 = environment.createRoom("Room2", ROOM_SIZE_2);
-        environment.createExit(room1, room2, "north");
+        console.log("Début chargement niveau")
+        const rooms = environment.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
+        console.log("Fin chargement")
+        // const environment = new Environment(scene);
+        // const room1 = environment.createRoom("Room1", ROOM_SIZE);
+        // const room2 = environment.createRoom("Room2", ROOM_SIZE_2);
+        // environment.createExit(room1, room2, "north");
 
         const inputController = new InputController(scene);
-        const player = new Player("player", scene, room1, environment);
-        environment.playerEnter(room1);
+        const player = new Player("player", scene, rooms[2][2], environment);
+        environment.playerEnter(rooms[2][2]);
 
         const enemyManager = new EnemyManager(scene, player);
         // enemyManager.spawnEnemies(room1, 1); // Spawn 1 enemy in room1

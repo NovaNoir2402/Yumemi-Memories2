@@ -19,11 +19,13 @@ export class RoomModel{
         2: null,
         3: null,
     };
+    public readonly position: Vector3;
     public static readonly MAX_DOORS = 4;
 
-    constructor(name: string, size: Vector3) {
+    constructor(name: string, size: Vector3, position: Vector3) {
         this.name = name;
         this.size = size;
+        this.position = position;
         const wallColor = new Color3(0.5, 0.5, 0.5);
         this.walls[DoorModel.NORTH] = new WallModel(
            `${this.name}_north_wall`,
@@ -64,7 +66,7 @@ export class RoomModel{
 
     public addDoor(direction: 0 | 1 | 2 | 3, connectedRoom: RoomModel) {
         console.log(`Adding door to ${this.name} in direction ${direction}`);
-        this.doors[direction] = new DoorModel(this, direction, new Color3(1, 0, 0), connectedRoom);
+        this.doors[direction] = new DoorModel(this, direction, new Color3(0, 0, 1), connectedRoom);
     }
 
 }

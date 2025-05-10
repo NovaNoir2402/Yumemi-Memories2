@@ -1,14 +1,51 @@
 import { Scene, Vector3 } from "@babylonjs/core";
-import { Room } from "./room";
+import { RoomModel } from "./model/roomModel";
 import { Environment } from "./environment";
+import { DoorModel } from "./model/doorModel";
 
 export class Level {
     private readonly _scene: Scene;
-    private readonly _rooms: Room[] = [];
+    private _rooms: RoomModel[][];
+    public static readonly ROOMS_GAP = 10;
 
     constructor(scene: Scene) {
         this._scene = scene;
     }
+
+    // public generateSimpleRandomLevel(numberOfRoomsX:number, numberOfRoomsY:number, roomSize: Vector3): void {
+    //     const environment = new Environment(this._scene);
+    //     this._rooms = new RoomModel[numberOfRoomsX][numberOfRoomsY];
+    //     for (let x = 0; x < this._rooms.length; x++) {
+    //         for(let y = 0; y < this._rooms[x].length; y++) {
+    //             const room = environment.createRoom(`Room${x}_${y}`, roomSize, new Vector3(x*Level.ROOMS_GAP, y*Level.ROOMS_GAP, 0));
+    //             if(x != 0) {
+    //                 const nextDoorRoom = this._rooms[x-1][y];
+    //                 if(nextDoorRoom != null) {
+    //                     room.addDoor(DoorModel.NORTH, nextDoorRoom);
+    //                 }
+    //             }
+    //             if(x != this._rooms.length-1) {
+    //                 const nextDoorRoom = this._rooms[x+1][y];
+    //                 if(nextDoorRoom != null) {
+    //                     room.addDoor(DoorModel.SOUTH, nextDoorRoom);
+    //                 }
+    //             }
+    //             if(y != 0) {
+    //                 const nextDoorRoom = this._rooms[x][y-1];
+    //                 if(nextDoorRoom != null) {
+    //                     room.addDoor(DoorModel.EAST, nextDoorRoom);
+    //                 }
+    //             }
+    //             if(y != this._rooms[x].length-1) {
+    //                 const nextDoorRoom = this._rooms[x][y-1];
+    //                 if(nextDoorRoom != null) {
+    //                     room.addDoor(DoorModel.WEST, nextDoorRoom);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    // }
 
     // public generateSimpleGrid(gridSize: number, roomSize: Vector3): void {
     //     const environment = new Environment(scene);
@@ -25,7 +62,7 @@ export class Level {
     //     }
     // }
 
-    public getRooms(): Room[] {
+    public getRooms(): RoomModel[][] {
         return this._rooms;
     }
 }

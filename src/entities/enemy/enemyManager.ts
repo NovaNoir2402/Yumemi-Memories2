@@ -1,7 +1,7 @@
 import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
 import { Enemy } from "./enemy";
-import { Room } from "../../room";
 import { Player } from "../player/player";
+import { RoomModel } from "../../model/roomModel";
 
 export class EnemyManager {
     private _scene: Scene;
@@ -14,7 +14,7 @@ export class EnemyManager {
     }
 
     public spawnEnemies(
-        room: Room,
+        room: RoomModel,
         amount: number,
         aiBehavior?: (enemy: Enemy, player: Player) => void
     ): void {
@@ -34,7 +34,7 @@ export class EnemyManager {
         }
     }
     
-    private _getRandomSpawnPosition(room: Room): Vector3 {
+    private _getRandomSpawnPosition(room: RoomModel): Vector3 {
         // 1) Récupère le mesh du sol via metadata
         const floor = this._scene.meshes.find(m =>
             m.metadata?.isGround && m.name === `${room.name}_floor`
@@ -60,7 +60,7 @@ export class EnemyManager {
         return new Vector3(x, y, z);
     }
     
-    private _manualSpawnPosition(room: Room): Vector3 {
+    private _manualSpawnPosition(room: RoomModel): Vector3 {
         // Même logique que précédemment, en fallback
         const y = room.position.y + 1;
         const minX = room.position.x + 1;

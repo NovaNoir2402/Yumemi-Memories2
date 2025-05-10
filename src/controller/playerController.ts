@@ -234,6 +234,10 @@ export class PlayerController {
         return this.player._body?.transformNode?.position.clone() ?? Vector3.Zero();
     }
 
+    public set position(position: Vector3) {
+        this.player._body.transformNode.position = position;
+    }
+
     /*
     private async _loadCharacterAssets(scene: Scene): Promise<void> {
         async function loadCharacter(): Promise<{ mesh: Mesh; animationGroups: AnimationGroup[] }> {
