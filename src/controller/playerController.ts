@@ -19,6 +19,8 @@ import { Bullet } from "../entities/player/bullet";
 import { Environment } from "../environment";
 import { RoomModel } from "../model/roomModel";
 import { Player } from "../entities/player/player";
+import { DoorModel } from "../model/doorModel";
+import { Level } from "../level";
 
 export class PlayerController {
     public scene: Scene;
@@ -26,7 +28,7 @@ export class PlayerController {
     private isGrounded: boolean = false;
     private isOnSlope: boolean = false;
     private currentRoom: RoomModel | null = null;
-    private readonly _environment: Environment;
+    private readonly _level: Level;
     public onDeath?: () => void;
     public assets: { mesh: Mesh; } | null = null;
     private player: Player;
@@ -52,12 +54,12 @@ export class PlayerController {
     private static readonly SHOOT_COOLDOWN_MS = 300;
     private static readonly DAMAGE_COOLDOWN_MS = 2000;
 
-    constructor(name: string, player: Player, scene: Scene, room: RoomModel, environment: Environment) {
+    constructor(name: string, player: Player, scene: Scene, room: RoomModel, level: Level) {
         this.scene = scene;
         this.input = new InputController(scene);
         this.currentRoom = room;
         this.player = player;
-        this._environment = environment;
+        this._level = level;
       }
 
     public initialize(): void {
@@ -101,7 +103,8 @@ export class PlayerController {
         observable.add(event => {
             const meta = event.collidedAgainst?.transformNode?.metadata;
             if (event.type === "COLLISION_STARTED" && meta?.isDoor) {
-                this._handleDoorCollision(meta.connectedRoom);
+
+                this._handleDoorCollision(meta.connectedRoom, meta.direction);
             }
         });
 
@@ -119,10 +122,49 @@ export class PlayerController {
         });
     }
 
-    private _handleDoorCollision(targetRoom: RoomModel): void {
+    private _handleDoorCollision(targetRoom: RoomModel, direction: number): void {
         if (!this.player._canTeleport) return;
-
-        this._teleportToRoom(targetRoom, this._environment);
+        // Get the position of the opposite door of the target room with North as 0, South as 1, East as 2 and West as 3
+        // Use a switch case to determine the opposite door
+        let oppositeDirection: number;
+        switch (direction) {
+            case DoorModel.NORTH:
+                oppositeDirection = DoorModel.SOUTH;
+                break;
+            case DoorModel.SOUTH:
+                oppositeDirection = DoorModel.NORTH;
+                break;
+            case DoorModel.EAST:
+                oppositeDirection = DoorModel.WEST;
+                break;
+            case DoorModel.WEST:
+                oppositeDirection = DoorModel.EAST;
+                break;
+            default:
+                console.warn("Invalid door direction");
+                return;
+        }
+        const oppositeDoor = targetRoom.getDoor(oppositeDirection as 0 | 1 | 2 | 3);
+        // Get a clone of the door position
+        const doorPosition = oppositeDoor?.position.clone() ?? Vector3.Zero();
+        // Offset the door position depending on the direction to be slightly into the room so the player doesn't get stuck
+        const offset = 2;
+        switch (direction) {
+            case DoorModel.NORTH:
+                doorPosition.z -= offset;
+                break;
+            case DoorModel.SOUTH:
+                doorPosition.z += offset;
+                break;
+            case DoorModel.EAST:
+                doorPosition.x += offset;
+                break;
+            case DoorModel.WEST:
+                doorPosition.x -= offset;
+                break;
+        }
+        doorPosition.y += PlayerController.BODY_Y_POSITION;
+        this._teleportToRoom(targetRoom, this._level, doorPosition);
 
         this.player._canTeleport = false;
         setTimeout(() => {
@@ -130,13 +172,12 @@ export class PlayerController {
         }, PlayerController.TELEPORT_COOLDOWN_MS);
     }
 
-    private _teleportToRoom(room: RoomModel, environment: Environment): void {
+    private _teleportToRoom(room: RoomModel, level: Level, doorPosition: Vector3): void {
         this.player._body.disablePreStep = false;
-        this.player._body.transformNode.position.copyFrom(new Vector3(0, 1, 0));
+        this.player._body.transformNode.position.copyFrom(doorPosition);
 
-        environment.playerEnter(room);
+        level.playerEnterRoom(room);
         this.currentRoom = room;
-
     }
 
     public update(): void {

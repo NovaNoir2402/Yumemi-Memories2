@@ -83,6 +83,7 @@ export class PlayerView {
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 0;
         this.scene.activeCamera = this.camera;
+        this.camera.beta = Math.PI / 4;
     }
 
     // --- Camera Logic ---
@@ -91,64 +92,63 @@ export class PlayerView {
 
     public updateCamera(): void {
         // 1) On cible toujours le joueur
-        const target = this.player._body.transformNode.position;//.add(new Vector3(2, PlayerController.CAMERA_HEIGHT, 0));
+        const target = this.player._body.transformNode.position;
         this.camera.setTarget(target);
-    
+
         // 2) On calcule la direction du joueur vers la caméra
         const direction = this.camera.position.subtract(target).normalize();
-    
+
         // 3) On lance un rayon depuis le joueur vers la caméra
         const ray = new Ray(
             target,                        // origine = position du joueur
             direction,                     // vers la caméra
-            PlayerView.CAMERA_MAX_RADIUS       // portée max = portée max autorisée
+            PlayerView.CAMERA_MAX_RADIUS   // portée max = portée max autorisée
         );
         const pickInfo = this.scene.pickWithRay(
             ray,
-            mesh => mesh !== this.player._mesh      // on ignore le corps du joueur
+            mesh => mesh !== this.player._mesh // on ignore le corps du joueur
         );
-    
+
         // 4) On détermine la distance souhaitée
-        //    - par défaut, on reste à la distance « normale » CAMERA_Z_OFFSET
-        //    - si on detecte un obstacle, on se place juste devant
         let targetRadius = PlayerView.CAMERA_Z_OFFSET;
         if (pickInfo.hit) {
             targetRadius = Math.max(pickInfo.distance - 0.5, PlayerView.CAMERA_MIN_RADIUS);
         }
-    
+
         // 5) On interpole la radius de manière fluide
         const smoothingFactor = 0.1;
         this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
         this.camera.radius = Math.min(this.camera.radius, PlayerView.CAMERA_MAX_RADIUS);
-    
-        // 6) Rotation fluide autour du joueur
-        if (!this._isRotating && this.player.controller.input.cameraRotation !== 0) {
-            const angle = this.player.controller.input.cameraRotation * PlayerView.CAMERA_ROTATION_SPEED;
-            this._smoothCameraRotation(angle);
+
+        // 6) Continuous rotation while the button is pressed
+        if (this.player.controller.input.cameraRotation !== 0) {
+            this._startContinuousRotation(this.player.controller.input.cameraRotation);
+        } else {
+            this._stopContinuousRotation();
         }
-    
-        // 7) Zoom manuel (molette / touches
+
+        // 7) Zoom manuel (molette / touches)
         if (this.player.controller.input.cameraZoom !== 0) {
             const newBeta = this.camera.beta + this.player.controller.input.cameraZoom * 0.02;
             this.camera.beta = Math.min(Math.max(newBeta, 0.5), Math.PI / 2.5);
         }
     }
-    
 
-    private _smoothCameraRotation(angle: number): void {
-        this._isRotating = true;
-        const targetAlpha = this.camera.alpha + angle;
-        const step = angle / PlayerView.CAMERA_ROTATION_FRAMES;
-        let currentFrame = 0;
-    
-        const interval = setInterval(() => {
-            if (currentFrame++ >= PlayerView.CAMERA_ROTATION_FRAMES) {
-                clearInterval(interval);
-                this.camera.alpha = targetAlpha;
-                this._isRotating = false;
-            } else {
-                this.camera.alpha += step;
-            }
+    private _rotationInterval: NodeJS.Timeout | null = null;
+
+    private _startContinuousRotation(direction: number): void {
+        if (this._rotationInterval) return; // Prevent multiple intervals
+
+        const step = direction * PlayerView.CAMERA_ROTATION_SPEED * 0.02; // Adjust speed as needed
+        this._rotationInterval = setInterval(() => {
+            this.camera.alpha += step;
         }, PlayerView.CAMERA_ROTATION_INTERVAL_MS);
+    }
+
+    private _stopContinuousRotation(): void {
+        if (this._rotationInterval) {
+            clearInterval(this._rotationInterval);
+            this._rotationInterval = null;
+        }
     }
 }

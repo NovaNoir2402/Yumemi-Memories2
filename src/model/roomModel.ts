@@ -65,8 +65,12 @@ export class RoomModel{
     }
 
     public addDoor(direction: 0 | 1 | 2 | 3, connectedRoom: RoomModel) {
-        console.log(`Adding door to ${this.name} in direction ${direction}`);
+        // console.log(`Adding door to ${this.name} in direction ${direction}`);
         this.doors[direction] = new DoorModel(this, direction, new Color3(0, 0, 1), connectedRoom);
+    }
+
+    public getDoor(direction: 0 | 1 | 2 | 3): DoorModel | null {
+        return this.doors[direction];
     }
 
 }

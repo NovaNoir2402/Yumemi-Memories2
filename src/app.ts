@@ -10,6 +10,7 @@ import { InputController } from "./controller/inputController";
 import { Player } from "./entities/player/player";
 import { EnemyManager } from "./entities/enemy/enemyManager";
 import { AdvancedDynamicTexture, Button, Control } from "@babylonjs/gui";
+import { Level } from "./level";
 // Constants
 const CANVAS_ID = "gameCanvas";
 const CAMERA_RADIUS = 10;
@@ -137,22 +138,18 @@ class App {
 
         this._addCameraAndLight(scene, "GameCamera");
 
-        const environment = new Environment(scene);
+        const level =  new Level(scene);
         console.log("Début chargement niveau")
-        const rooms = environment.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
+        const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
         console.log("Fin chargement")
-        // const environment = new Environment(scene);
-        // const room1 = environment.createRoom("Room1", ROOM_SIZE);
-        // const room2 = environment.createRoom("Room2", ROOM_SIZE_2);
-        // environment.createExit(room1, room2, "north");
+
 
         const inputController = new InputController(scene);
-        const player = new Player("player", scene, rooms[2][2], environment);
-        environment.playerEnter(rooms[2][2]);
+        const player = new Player("player", scene, rooms[2][2], level);
+        level.playerEnterRoom(rooms[2][2]);
 
         const enemyManager = new EnemyManager(scene, player);
-        // enemyManager.spawnEnemies(room1, 1); // Spawn 1 enemy in room1
-        // enemyManager.toggleAllEnemies(); // Deactivate all enemies
+        level.setEnemyManager(enemyManager);
     
         // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");

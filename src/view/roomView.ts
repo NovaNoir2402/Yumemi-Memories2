@@ -40,6 +40,8 @@ export class RoomView {
         material.diffuseColor = roof.color;
         roofMesh.material = material;
         new PhysicsAggregate(roofMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+        // Set the roof mesh to be invisible
+        roofMesh.isVisible = false;
     }
 
     protected _createFloor(): void {
@@ -97,7 +99,7 @@ export class RoomView {
                     this.scene
                 );
                 doorMesh.position = door.position;
-                doorMesh.metadata = { isDoor: true, connectedRoom: door.connectedRoom };
+                doorMesh.metadata = { isDoor: true, connectedRoom: door.connectedRoom, direction: dir };
                 const material = new StandardMaterial(`${door.name}_${dir}_doorMaterial`, this.scene);
                 material.diffuseColor = door.color;
                 doorMesh.material = material;
@@ -129,7 +131,6 @@ export class RoomView {
     public dispose(): void {
         for (let i = 0; i < this.scene.meshes.length; i++) {
             const mesh = this.scene.meshes[i];
-            console.log(`Disposing mesh: ${mesh.name}`);
 
             // Check if the mesh corresponds to the room's roof, floor, walls, or doors
             if (
@@ -141,7 +142,7 @@ export class RoomView {
                 mesh.dispose();
                 i--; // Adjust index since the array is modified after disposal
             } else {
-                console.warn(`Skipping unrelated mesh: ${mesh.name}`);
+                // do nothing
             }
         }
     }

@@ -21,7 +21,7 @@ export class DoorModel {
 
     constructor(room: RoomModel, direction: 0 | 1 | 2 | 3, color: Color3, connectedRoom: RoomModel) {
         this.isHorizontal = direction == DoorModel.NORTH || direction == DoorModel.SOUTH;
-        this.size = this.isHorizontal ? new Vector3(DoorModel.DOOR_WIDTH, WallModel.WALL_HEIGHT, WallModel.WALL_THICKNESS) : new Vector3(WallModel.WALL_THICKNESS, WallModel.WALL_HEIGHT, DoorModel.DOOR_DEPTH);
+        this.size = this.isHorizontal ? new Vector3(DoorModel.DOOR_WIDTH, WallModel.WALL_HEIGHT, WallModel.WALL_THICKNESS) : new Vector3(WallModel.WALL_THICKNESS, WallModel.WALL_HEIGHT, DoorModel.DOOR_WIDTH);
         const protrusionOffset = 0.1; // Protrusion into the room
         switch (direction) {
             case DoorModel.NORTH:

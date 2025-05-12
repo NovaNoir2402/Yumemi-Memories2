@@ -4,6 +4,7 @@ import { Entity } from "../entity";
 import { PlayerView } from "../../view/playerView";
 import { RoomModel } from "../../model/roomModel";
 import { Environment } from "../../environment";
+import { Level } from "../../level";
 
 export class Player extends Entity {
     public controller: PlayerController;
@@ -23,11 +24,11 @@ export class Player extends Entity {
         name: string,
         scene: Scene,
         room: RoomModel,
-        environment: Environment
+        level: Level
     ) {
         super(name, scene);
 
-        this.controller = new PlayerController("PlayerController", this, scene, room, environment);
+        this.controller = new PlayerController("PlayerController", this, scene, room, level);
         this.view = new PlayerView(this, scene);
         this.scene = scene;
 

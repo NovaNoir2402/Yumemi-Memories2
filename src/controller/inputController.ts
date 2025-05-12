@@ -36,5 +36,6 @@ export class InputController {
         // M button for debug teleport
         this.debug = this.inputMap["m"] ? 1 : 0;
         this.shoot = this.inputMap["f"]; // F key for shooting
+        
     }
 }
