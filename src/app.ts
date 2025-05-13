@@ -140,7 +140,8 @@ class App {
 
         const level =  new Level(scene);
         console.log("Début chargement niveau")
-        const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
+        // const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
+        const rooms = level.generateStage(8, 4, 4, ROOM_SIZE_2);
         console.log("Fin chargement")
 
 

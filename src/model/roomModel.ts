@@ -13,19 +13,23 @@ export class RoomModel{
     public readonly floor: FloorModel;
     public readonly roof: RoofModel;
     public readonly size: Vector3;
-    public readonly doors: { [direction: int]: DoorModel | null } = {
+    public readonly doors: { [direction: number]: DoorModel | null } = {
         0: null,
         1: null,
         2: null,
         3: null,
     };
     public readonly position: Vector3;
+    public readonly type: "is_normal" | "is_boss";
     public static readonly MAX_DOORS = 4;
+    public static readonly IS_NORMAL = "is_normal";
+    public static readonly IS_BOSS = "is_boss";
 
-    constructor(name: string, size: Vector3, position: Vector3) {
+    constructor(name: string, size: Vector3, position: Vector3, type: "is_normal" | "is_boss") {
         this.name = name;
         this.size = size;
         this.position = position;
+        this.type = type;
         const wallColor = new Color3(0.5, 0.5, 0.5);
         this.walls[DoorModel.NORTH] = new WallModel(
            `${this.name}_north_wall`,
