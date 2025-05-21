@@ -5,6 +5,7 @@ import { PlayerView } from "../../view/playerView";
 import { RoomModel } from "../../model/roomModel";
 import { Environment } from "../../environment";
 import { Level } from "../../level";
+import { Weapon } from "./weapon";
 
 export class Player extends Entity {
     public controller: PlayerController;
@@ -12,6 +13,9 @@ export class Player extends Entity {
     public scene: Scene;
     public room: RoomModel;
     public environment: Environment;
+    public _weapon: Weapon;
+
+    public modifiders: [];
 
     public _health: number = 100;
     public _canTakeDamage: boolean = true;
@@ -35,6 +39,8 @@ export class Player extends Entity {
         this.controller.initialize();
         this.view._setupCamera();
         this.view._setupHUD();
+
+        this._weapon = new Weapon(scene,"shotgun",this);
     }
 
     public update(): void {

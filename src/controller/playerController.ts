@@ -31,7 +31,7 @@ export class PlayerController {
     private readonly _level: Level;
     public onDeath?: () => void;
     public assets: { mesh: Mesh; } | null = null;
-    private player: Player;
+    public player: Player;
 
     // Constants
     private static readonly BODY_HEIGHT = 2;
@@ -210,20 +210,9 @@ export class PlayerController {
         }
 
         if (this.input.shoot && this.player._canShoot) {
-            this._shootBullet();
-            setTimeout(() => {
-                this.player._canShoot = true;
-            }, PlayerController.SHOOT_COOLDOWN_MS);
+            this.input.shoot = false;
+            this.player._weapon._shootBullet();
         }
-    }
-
-    private _shootBullet(): void {
-        this.input.shoot = false;
-        this.player._canShoot = false;
-        
-        const cameraForward = this.player.view.camera.getForwardRay().direction;
-        const shootOrigin = this.player._body.transformNode.position.add(cameraForward.scale(1));
-        new Bullet(this.scene, shootOrigin, cameraForward, PlayerController.BULLET_DAMAGE);
     }
 
     private _applyMovement(direction: Vector3): void {
