@@ -212,7 +212,7 @@ export class Level {
 
         // Spawn enemies in the entered room, if the EnemyManager is defined
         if (this.enemyManager) {
-            this.enemyManager.spawnEnemies(room, 1); // Example: spawn 1
+            this.enemyManager.spawnEnemiesForThreat(room);
         }
     }
 }

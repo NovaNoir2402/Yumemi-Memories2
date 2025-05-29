@@ -138,7 +138,7 @@ class App {
 
         this._addCameraAndLight(scene, "GameCamera");
 
-        const level =  new Level(scene);
+        const level = new Level(scene);
         console.log("Début chargement niveau")
         // const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
         const rooms = level.generateStage(8, 4, 4, ROOM_SIZE_2);
@@ -151,7 +151,7 @@ class App {
 
         const enemyManager = new EnemyManager(scene, player);
         level.setEnemyManager(enemyManager);
-    
+
         // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const loseButton = Button.CreateSimpleButton("lose", "LOSE GAME");
@@ -180,6 +180,10 @@ class App {
     }
 
     private async _goToLose(): Promise<void> {
+        // Stop the render loop before disposing the scene to avoid physics errors
+        this._engine.stopRenderLoop();
+
+        // Remove everything from the previous scene
         this._scene?.dispose();
         const scene = new Scene(this._engine);
         scene.clearColor = SCENE_COLOR_LOSE;

@@ -59,8 +59,14 @@ export class Weapon {
     }
 
     private _getShootOrigin(): Vector3 {
-        const forward = this.player.view.camera.getForwardRay().direction;
-        return this.player._body.transformNode.position.add(forward.scale(1));
+        const camera = this.player.view.camera;
+        const forward = camera.getDirection(Vector3.Forward());
+        // Start from the player's position (not the camera)
+        const playerPos = this.player._body.transformNode.position;
+        // Offset 1 unit in front of the player, in the camera's forward direction
+        return playerPos.add(forward.scale(1));
+        // const forward = this.player.view.camera.getForwardRay().direction;
+        // return this.player._body.transformNode.position.add(forward.scale(1));
     }
 
     private _getForwardDirection(): Vector3 {
@@ -72,6 +78,7 @@ export class Weapon {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
         new Bullet(this._scene, origin, dir, Weapon.PISTOL_DAMAGE);
+
     }
 
     /** Shotgun : plusieurs projectiles avec dispersion */
@@ -85,6 +92,7 @@ export class Weapon {
             const dir = this._applySpread(baseDir, spreadAngle);
             new Bullet(this._scene, origin, dir, Weapon.SHOTGUN_DAMAGE); // dégâts réduits
         }
+
     }
 
     /** Sniper : tir unique très précis, dégâts élevés */

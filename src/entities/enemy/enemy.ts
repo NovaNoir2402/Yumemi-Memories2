@@ -10,13 +10,14 @@ import { Entity } from "../entity";
 import { Player } from "../player/player"; // Or wherever the Player class is
 
 export class Enemy extends Entity {
-    private readonly _speed: number = 4;
-    private readonly _maxSpeed: number = 5;
-    private readonly _player: Player;
-    private _isActive: boolean = true;
-    private _aiBehavior: (enemy: Enemy, player: Player) => void;
-    private health: number;
-    private damage: number;
+    public readonly _speed: number = 4;
+    public readonly _maxSpeed: number = 5;
+    public readonly _player: Player;
+    public _isActive: boolean = true;
+    public _aiBehavior: (enemy: Enemy, player: Player) => void;
+    public health: number;
+    public damage: number;
+    public readonly threatLevel: number = 1;
 
     constructor(name: string, scene: Scene, player: Player, spawnPosition: Vector3, damage: number, health: number) {
         super(name, scene);

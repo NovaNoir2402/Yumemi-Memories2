@@ -2,15 +2,48 @@ import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@ba
 import { Enemy } from "./enemy";
 import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
+import { SlimeEnemyDecorator } from "./enemy-types/slimeEnemy";
+
+type EnemyFactory = (scene: Scene, player: Player, spawnPos: Vector3) => Enemy;
+
+const ENEMY_FACTORIES: EnemyFactory[] = [
+    (scene, player, pos) => new SlimeEnemyDecorator(new Enemy("slime", scene, player, pos, 5, 30)),
+    // Add more factories for other enemy types/decorators
+];
 
 export class EnemyManager {
     private _scene: Scene;
     private _player: Player;
     private _enemies: Enemy[] = [];
+    public threatRating: number = 1;
+    
 
     constructor(scene: Scene, player: Player) {
         this._scene = scene;
         this._player = player;
+    }
+
+        // Call this to spawn enemies matching the current threat rating
+    public spawnEnemiesForThreat(room: RoomModel): void {
+        let remainingThreat = this.threatRating;
+        const possibleFactories = ENEMY_FACTORIES
+            .map(factory => factory(this._scene, this._player, this._getRandomSpawnPosition(room)))
+            .filter(enemy => enemy.threatLevel <= remainingThreat);
+
+        const chosenEnemies: Enemy[] = [];
+
+        while (remainingThreat > 0 && possibleFactories.length > 0) {
+            const candidates = possibleFactories.filter(e => e.threatLevel <= remainingThreat);
+            if (candidates.length === 0) break;
+            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+            chosenEnemies.push(chosen);
+            remainingThreat -= chosen.threatLevel;
+        }
+
+        this._enemies.push(...chosenEnemies);
+
+        // Increase threat rating for next call
+        this.threatRating += 1;
     }
 
     public spawnEnemies(

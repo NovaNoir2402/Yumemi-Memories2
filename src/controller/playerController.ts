@@ -209,8 +209,8 @@ export class PlayerController {
             this.player._body.setAngularVelocity(Vector3.Zero());
         }
 
-        if (this.input.shoot && this.player._canShoot) {
-            this.input.shoot = false;
+        if (this.player._canShoot) {
+            // this.input.shoot = false;
             this.player._weapon._shootBullet();
         }
     }

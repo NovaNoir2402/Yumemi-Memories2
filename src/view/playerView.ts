@@ -9,7 +9,7 @@ import {
 export class PlayerView {
     private player: Player;
     private scene: Scene;
-    
+
     private healthBarBackground: Rectangle;
     private healthBarForeground: Rectangle;
 
@@ -36,7 +36,7 @@ export class PlayerView {
 
     public _setupHUD(): void {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
-    
+
         // Conteneur principal
         const healthContainer = new Rectangle();
         healthContainer.width = "220px";
@@ -46,11 +46,11 @@ export class PlayerView {
         healthContainer.paddingTop = "10px";
         healthContainer.paddingLeft = "10px";
         advancedTexture.addControl(healthContainer);
-    
+
         const stackPanel = new StackPanel();
         stackPanel.isVertical = true;
         healthContainer.addControl(stackPanel);
-    
+
         // Fond de la barre de vie
         this.healthBarBackground = new Rectangle();
         this.healthBarBackground.width = "200px";
@@ -60,7 +60,7 @@ export class PlayerView {
         this.healthBarBackground.thickness = 1;
         this.healthBarBackground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         stackPanel.addControl(this.healthBarBackground);
-    
+
         // Barre de vie rouge (au-dessus du fond)
         this.healthBarForeground = new Rectangle();
         this.healthBarForeground.width = "100%";
@@ -69,7 +69,7 @@ export class PlayerView {
         this.healthBarForeground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         this.healthBarForeground.thickness = 0;
         this.healthBarBackground.addControl(this.healthBarForeground);
-    
+
         // Mise à jour dynamique
         this.scene.registerBeforeRender(() => {
             const percentage = Math.max(0, this.player.health) / 100;
@@ -77,13 +77,40 @@ export class PlayerView {
         });
     }
 
+    private _onMouseMove: (event: MouseEvent) => void;
+
     public _setupCamera(): void {
+        const canvas = this.scene.getEngine().getRenderingCanvas();
+        canvas.addEventListener("click", () => {
+            canvas.requestPointerLock();
+            if (canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            }
+        });
+
+        // Prevent default actions for mouse buttons
+        // canvas.addEventListener("mousedown", (e) => e.preventDefault());
+        // canvas.addEventListener("mouseup", (e) => e.preventDefault());
+        // canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
         this.camera = new ArcRotateCamera("Camera", 0, 0, 0, Vector3.Zero(), this.scene);
         this.camera.setPosition(new Vector3(0, PlayerView.CAMERA_HEIGHT, PlayerView.CAMERA_Z_OFFSET));
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 0;
         this.scene.activeCamera = this.camera;
         this.camera.beta = Math.PI / 4;
+
+        this._onMouseMove = (event: MouseEvent) => {
+            if (document.pointerLockElement === canvas) {
+                const sensitivity = 0.002; // Adjust as needed
+                this.camera.alpha -= event.movementX * sensitivity;
+                this.camera.beta -= event.movementY * sensitivity;
+                // Clamp beta to avoid flipping
+                this.camera.beta = Math.max(0.5, Math.min(Math.PI / 2.5, this.camera.beta));
+            }
+        };
+        canvas.addEventListener("mousemove", this._onMouseMove);
+
     }
 
     // --- Camera Logic ---
@@ -120,12 +147,12 @@ export class PlayerView {
         this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
         this.camera.radius = Math.min(this.camera.radius, PlayerView.CAMERA_MAX_RADIUS);
 
-        // 6) Continuous rotation while the button is pressed
-        if (this.player.controller.input.cameraRotation !== 0) {
-            this._startContinuousRotation(this.player.controller.input.cameraRotation);
-        } else {
-            this._stopContinuousRotation();
-        }
+        // // 6) Continuous rotation while the button is pressed
+        // if (this.player.controller.input.cameraRotation !== 0) {
+        //     this._startContinuousRotation(this.player.controller.input.cameraRotation);
+        // } else {
+        //     this._stopContinuousRotation();
+        // }
 
         // 7) Zoom manuel (molette / touches)
         if (this.player.controller.input.cameraZoom !== 0) {
