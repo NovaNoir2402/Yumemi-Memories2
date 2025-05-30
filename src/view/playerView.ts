@@ -334,35 +334,37 @@ export class PlayerView {
 
         // Keyboard navigation
         const onKeyDown = (e: KeyboardEvent) => {
-            if (!this.inventoryVisible) return;
-            let row = Math.floor(this.selectedInventoryIndex / 3);
-            let col = this.selectedInventoryIndex % 3;
-            if (e.code === "ArrowRight") {
-                col = (col + 1) % 3;
-            } else if (e.code === "ArrowLeft") {
-                col = (col + 2) % 3;
-            } else if (e.code === "ArrowDown") {
-                row = (row + 1) % 2;
-            } else if (e.code === "ArrowUp") {
-                row = (row + 1) % 2;
-            } else if (e.code === "Enter") {
-                const itemsArr = Object.values(this.player.inventory.getItems());
-                const item = itemsArr[this.selectedInventoryIndex];
-                if (item && item.use && item.use(this.player)) {
-                    this.player.inventory.removeItem(item.name);
-                    this.closeInventory();
-                }
-            } else if (e.code === "Tab" || e.code === "Escape") {
-                e.preventDefault();
-                this.closeInventory();
-                return;
-            } else {
-                return;
-            }
-            this.selectedInventoryIndex = row * 3 + col;
-            updateHighlight();
+        if (!this.inventoryVisible) return;
+        let row = Math.floor(this.selectedInventoryIndex / 3);
+        let col = this.selectedInventoryIndex % 3;
+        if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.code)) {
             e.preventDefault();
-        };
+            e.stopPropagation();
+        }
+        if (e.code === "ArrowRight") {
+            col = (col + 1) % 3;
+        } else if (e.code === "ArrowLeft") {
+            col = (col + 2) % 3;
+        } else if (e.code === "ArrowDown") {
+            row = (row + 1) % 2;
+        } else if (e.code === "ArrowUp") {
+            row = (row + 1) % 2;
+        } else if (e.code === "Enter") {
+            const itemsArr = Object.values(this.player.inventory.getItems());
+            const item = itemsArr[this.selectedInventoryIndex];
+            if (item && item.use && item.use(this.player)) {
+                this.player.inventory.removeItem(item.name);
+                this.closeInventory();
+            }
+        } else if (e.code === "Tab" || e.code === "Escape") {
+            this.closeInventory();
+            return;
+        } else {
+            return;
+        }
+        this.selectedInventoryIndex = row * 3 + col;
+        updateHighlight();
+    };
         window.addEventListener("keydown", onKeyDown);
 
         // Remove listener on close

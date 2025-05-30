@@ -9,7 +9,7 @@ export class SlimeEnemy extends Enemy {
     private _slimeModel: any;
 
     constructor(scene, player, spawnPosition) {
-        super("slime", scene, player, spawnPosition, 5, 30);
+        super("slime", scene, player, spawnPosition, 5, 90);
         this._initVisual();
         this._isActive = true;
     }

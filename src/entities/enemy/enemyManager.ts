@@ -4,13 +4,15 @@ import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
 import { SlimeEnemy } from "./enemy-types/slimeEnemy";
 import { OrcEnemy } from "./enemy-types/orcEnemy";
+import { ShockwaveEnemy } from "./enemy-types/shockWaveEnemy"
 import { HealingItem } from "../player/itemTypes/healingItem";
 
-type EnemyType = "slime" | "orc"; // Add more types as needed
+type EnemyType = "slime" | "orc" | "shockWave"; // Add more types as needed
 
 const ENEMY_TYPES: EnemyType[] = [
     "slime",
     "orc",
+    "shockWave",
     // Add more types here
 ];
 
@@ -45,7 +47,11 @@ export class EnemyManager {
                     enemy = new SlimeEnemy(this._scene, this._player, spawnPos);
                     threatLevel = enemy.threatLevel;
                     break;
-
+                    
+                case "shockWave":
+                    enemy = new ShockwaveEnemy(this._scene, this._player, spawnPos);
+                    threatLevel = enemy.threatLevel;
+                    break;
                 //case "orc":
                     // enemy = new OrcEnemy(this._scene, this._player, spawnPos);
                     // threatLevel = enemy.threatLevel;
