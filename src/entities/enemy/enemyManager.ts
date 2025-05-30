@@ -3,12 +3,14 @@ import { Enemy } from "./enemy";
 import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
 import { SlimeEnemy } from "./enemy-types/slimeEnemy";
+import { OrcEnemy } from "./enemy-types/orcEnemy";
 import { HealingItem } from "../player/itemTypes/healingItem";
 
-type EnemyType = "slime"; // Add more types as needed
+type EnemyType = "slime" | "orc"; // Add more types as needed
 
 const ENEMY_TYPES: EnemyType[] = [
     "slime",
+    "orc",
     // Add more types here
 ];
 
@@ -40,14 +42,21 @@ export class EnemyManager {
 
             switch (type) {
                 case "slime":
-                default:
                     enemy = new SlimeEnemy(this._scene, this._player, spawnPos);
                     threatLevel = enemy.threatLevel;
                     break;
+
+                //case "orc":
+                    // enemy = new OrcEnemy(this._scene, this._player, spawnPos);
+                    // threatLevel = enemy.threatLevel;
+                    // break;
                 // Add more cases for other enemy types
+                default:
+                    console.warn(`Unknown enemy type: ${type}`);
+                    continue;
             }
 
-            if (threatLevel > remainingThreat) break;
+            if (threatLevel > remainingThreat) continue;
 
             chosenEnemies.push(enemy);
             remainingThreat -= threatLevel;

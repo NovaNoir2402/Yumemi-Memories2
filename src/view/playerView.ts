@@ -397,8 +397,9 @@ export class PlayerView {
                 roomRect.color = "#333";
                 roomRect.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                 roomRect.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+                // Flip vertically: draw row 0 at the bottom, last row at the top
                 roomRect.left = `${10 + x * 20}px`;
-                roomRect.top = `${10 + y * 20}px`;
+                roomRect.top = `${10 + (gridRows - 1 - y) * 20}px`;
                 this.minimapContainer.addControl(roomRect);
                 this.roomRects[y][x] = roomRect;
             }
@@ -425,7 +426,7 @@ export class PlayerView {
                     rect.background = "#ff0";
                     rect.thickness = 3;
                     rect.color = "#f80";
-                } else if (room.IS_CLEARED) {
+                } else if (room.isCompleted()) {
                     // Cleared room: blue
                     rect.background = "#2196f3";
                     rect.thickness = 2;

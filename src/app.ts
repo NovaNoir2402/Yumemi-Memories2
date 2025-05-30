@@ -40,7 +40,8 @@ enum State {
     START = 0,
     GAME = 1,
     LOSE = 2,
-    CUTSCENE = 3
+    CUTSCENE = 3,
+    WIN = 4 // Add WIN state
 }
 
 // App Class
@@ -49,6 +50,8 @@ class App {
     private readonly _engine: Engine;
     private _scene: Scene;
     private _state: State = State.START;
+    private _winOverlay: AdvancedDynamicTexture | null = null;
+    private _gameStartTime: number = 0;
 
     constructor() {
         this._canvas = this._createCanvas();
@@ -287,7 +290,7 @@ class App {
         console.log("Début chargement niveau")
         // const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
         const rooms = level.generateStage(8, 4, 4, ROOM_SIZE_2);
-        console.log("Fin chargement")
+        console.log("Fin chargement");
 
 
         const inputController = new InputController(scene);
@@ -297,6 +300,9 @@ class App {
         const enemyManager = new EnemyManager(scene, player);
         level.setEnemyManager(enemyManager);
 
+        // Track game start time
+        this._gameStartTime = Date.now();
+
         // Add a lose game button
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const loseButton = Button.CreateSimpleButton("lose", "LOSE GAME");
@@ -305,7 +311,6 @@ class App {
         loseButton.color = BUTTON_COLOR;
         loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         // guiMenu.addControl(loseButton);
-        // const minimap = this._createMinimap(level, player);
 
         player.onDeath = () => {
             this._goToLose();
@@ -315,15 +320,84 @@ class App {
             this._goToLose();
         });
 
+        // WIN CHECK: If all rooms are completed, go to win
+        const checkWin = () => {
+            // Flatten all rooms and check if all are completed
+            const allRooms = rooms.flat();
+            if (allRooms.every(room => room.isCompleted())) {
+                this._goToWin();
+            }
+        };
+
         this._engine.runRenderLoop(() => {
             scene.render();
             player.update();
             enemyManager.updateEnemies();
-            // minimap.update(); // Update minimap highlight
+            checkWin();
         });
 
         this._scene = scene;
         this._state = State.GAME;
+    }
+
+    // WIN OVERLAY
+    private async _goToWin(): Promise<void> {
+        // Remove previous overlay if it exists
+        if (this._winOverlay) {
+            this._winOverlay.dispose();
+        }
+
+        this._winOverlay = AdvancedDynamicTexture.CreateFullscreenUI("WinUI");
+
+        // Create a popup rectangle
+        const popup = new Rectangle("popup");
+        popup.width = "800px";
+        popup.height = "500px";
+        popup.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        popup.background = "rgba(30, 30, 30, 0.95)";
+        popup.cornerRadius = 20;
+        popup.thickness = 2;
+        popup.color = "white";
+        this._winOverlay.addControl(popup);
+
+        // Congratulations text
+        const winText = new TextBlock();
+        winText.text = "CONGRATULATIONS!";
+        winText.color = "#4caf50";
+        winText.fontSize = 48;
+        winText.height = "80px";
+        winText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        winText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(winText);
+
+        // Completion time
+        const completionTime = ((Date.now() - this._gameStartTime) / 1000);
+        const minutes = Math.floor(completionTime / 60);
+        const seconds = Math.floor(completionTime % 60);
+        const timeText = new TextBlock();
+        timeText.text = `Completion Time: ${minutes}m ${seconds < 10 ? "0" : ""}${seconds}s`;
+        timeText.color = "white";
+        timeText.fontSize = 28;
+        timeText.height = "50px";
+        timeText.top = "70px";
+        timeText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        timeText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(timeText);
+
+        // Story phrase
+        const storyText = new TextBlock();
+        storyText.text = "You woke up on your bed...\nBut something feels missing";
+        storyText.color = "#fff";
+        storyText.fontSize = 28;
+        storyText.height = "80px";
+        storyText.top = "130px";
+        storyText.textWrapping = true;
+        storyText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        storyText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(storyText);
+
+        this._state = State.WIN;
     }
 
     private _loseOverlay: AdvancedDynamicTexture | null = null;

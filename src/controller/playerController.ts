@@ -217,9 +217,6 @@ export class PlayerController {
     private _teleportToRoom(room: RoomModel, level: Level, doorPosition: Vector3): void {
         this.player._body.disablePreStep = false;
         this.player._body.transformNode.position.copyFrom(doorPosition);
-        if (this.currentRoom) {
-            this.currentRoom.IS_CLEARED = true; // Mark the current room as cleared
-        }
 
         level.playerEnterRoom(room);
         this.currentRoom = room;
