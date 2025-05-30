@@ -6,6 +6,7 @@ import { RoomModel } from "../../model/roomModel";
 import { Environment } from "../../environment";
 import { Level } from "../../level";
 import { Weapon } from "./weapon";
+import { Inventory } from "./inventory";
 
 export class Player extends Entity {
     public controller: PlayerController;
@@ -13,6 +14,7 @@ export class Player extends Entity {
     public scene: Scene;
     public room: RoomModel;
     public environment: Environment;
+    public inventory: Inventory;
     public _weapon: Weapon;
 
     public modifiders: [];
@@ -41,6 +43,7 @@ export class Player extends Entity {
         this.view._setupHUD();
 
         this._weapon = new Weapon(scene,"pistol",this);
+        this.inventory = new Inventory(6);
     }
 
     public update(): void {

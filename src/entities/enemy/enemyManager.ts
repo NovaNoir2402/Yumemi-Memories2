@@ -3,6 +3,7 @@ import { Enemy } from "./enemy";
 import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
 import { SlimeEnemy } from "./enemy-types/slimeEnemy";
+import { HealingItem } from "../player/itemTypes/healingItem";
 
 type EnemyType = "slime"; // Add more types as needed
 
@@ -111,10 +112,16 @@ export class EnemyManager {
 
     public updateEnemies(): void {
         this._enemies.forEach((enemy) => enemy.update());
-        // Remove dead enemies from the array
         this._enemies = this._enemies.filter(enemy => enemy._isActive);
-        //console.log(`Active enemies: ${this.countEnemies()}`);
+
         if (this.countEnemies() == 0) {
+            const currentRoom = this._player.controller.currentRoom;
+            if (currentRoom && !currentRoom._itemGiven) {
+                currentRoom._itemGiven = true;
+                this._player.controller.player.inventory.addItem(new HealingItem(this._scene));
+                // Show notification
+                this._player.view.showNotification("Healing Potion Awarded");
+            }
             this._player.controller.currentRoom.setToCompleted();
         }
     }

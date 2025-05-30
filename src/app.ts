@@ -219,6 +219,21 @@ class App {
         speakerText.paddingLeft = "20px";
         dialogueBox.addControl(speakerText);
 
+        // Tip text (top right)
+        const tipText = new TextBlock();
+        tipText.text = "Click to continue...";
+        tipText.fontSize = 18;
+        tipText.color = "#bbb";
+        tipText.height = "40px";
+        tipText.width = "200px";
+        tipText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        tipText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        tipText.top = "10px";
+        tipText.left = "-20px";
+        tipText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        tipText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        guiMenu.addControl(tipText);
+
         // Helper to update dialogue
         const updateDialogue = () => {
             const line = this._cutsceneDialogue[this._cutsceneIndex];

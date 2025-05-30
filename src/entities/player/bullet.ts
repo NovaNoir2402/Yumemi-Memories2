@@ -76,7 +76,7 @@ export class Bullet extends Entity {
 
     // Constants
     private static readonly SPEED = 50;
-    private static readonly LIFETIME = 3000; // ms
+    private static readonly LIFETIME = 500; // ms
     private static readonly DIAMETER = 0.2;
     private static readonly MASS = 0.1;
     private static readonly COLOR = new Color3(1, 1, 0);

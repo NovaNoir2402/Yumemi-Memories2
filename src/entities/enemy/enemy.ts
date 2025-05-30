@@ -103,6 +103,7 @@ export class Enemy extends Entity {
         this._body.setLinearVelocity(Vector3.Zero()); // Arrête le mouvement
         // Turn off collision
         this._body.setCollisionCallbackEnabled(false);
+        this._isLethal = false; // Disable lethality
         console.log(`${this.name} has died`);
     }
 }

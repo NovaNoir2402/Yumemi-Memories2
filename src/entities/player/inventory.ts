@@ -1,7 +1,7 @@
 import { Item } from "./items";
 
 export class Inventory {
-    private _items: { [key: string]: Item } = {};
+    private _items: Item[] = [];
     private _capacity: number;
 
     constructor(capacity: number) {
@@ -9,22 +9,23 @@ export class Inventory {
     }
 
     public addItem(item: Item): boolean {
-        if (Object.keys(this._items).length < this._capacity) {
-            this._items[item.name] = item;
+        if (this._items.length < this._capacity) {
+            this._items.push(item);
             return true;
         }
         return false;
     }
 
     public removeItem(itemName: string): boolean {
-        if (this._items[itemName]) {
-            delete this._items[itemName];
+        const idx = this._items.findIndex(i => i.name === itemName);
+        if (idx !== -1) {
+            this._items.splice(idx, 1);
             return true;
         }
         return false;
     }
 
-    public getItems(): { [key: string]: Item } {
+    public getItems(): Item[] {
         return this._items;
     }
 }

@@ -18,8 +18,8 @@ export class Weapon {
     public player: Player;
 
     private static readonly SHOOT_COOLDOWN_MS = 300;
-    private static readonly BULLET_DAMAGE = 30;
-    private static readonly PISTOL_DAMAGE = 50;
+    // private static readonly BULLET_DAMAGE = 30;
+    private static readonly PISTOL_DAMAGE = 30;
     private static readonly SHOTGUN_DAMAGE = 20;
     private static readonly SNIPER_DAMAGE = 100;
     private static readonly AUTO_DAMAGE = 15;

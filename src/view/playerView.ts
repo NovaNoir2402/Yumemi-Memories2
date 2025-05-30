@@ -1,6 +1,7 @@
 import { FreeCamera, Vector3, Scene, MeshBuilder, Mesh, Quaternion } from "@babylonjs/core";
-import { AdvancedDynamicTexture, Rectangle, Control, TextBlock, StackPanel } from "@babylonjs/gui";
+import { AdvancedDynamicTexture, Rectangle, Control, TextBlock, StackPanel, Button, Grid } from "@babylonjs/gui";
 import { Player } from "../entities/player/player";
+import { HealingItem } from "../entities/player/itemTypes/healingItem";
 
 export class PlayerView {
     private player: Player;
@@ -27,6 +28,11 @@ export class PlayerView {
     private enemyLeftContainer: Rectangle;
     private enemyLeftText: TextBlock;
     private enemyLeftSubText: TextBlock;
+
+    private inventoryUI: AdvancedDynamicTexture | null = null;
+    private inventoryVisible: boolean = false;
+    private selectedInventoryIndex: number = 0;
+    private inventorySlots: Rectangle[] = [];
 
     constructor(player: Player, scene: Scene) {
         this.player = player;
@@ -127,8 +133,184 @@ export class PlayerView {
                 this.enemyLeftSubText.color = "#2196f3";
             }
         });
+
+        // Inventory button (bottom left)
+        const inventoryBtn = Button.CreateSimpleButton("inventoryBtn", "Inventory (Tab)");
+        inventoryBtn.width = "160px";
+        inventoryBtn.height = "40px";
+        inventoryBtn.color = "white";
+        inventoryBtn.background = "#444";
+        inventoryBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        inventoryBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        inventoryBtn.top = "-10px";
+        inventoryBtn.left = "10px";
+        inventoryBtn.onPointerUpObservable.add(() => this.toggleInventory());
+        advancedTexture.addControl(inventoryBtn);
+
+        // Listen for Tab key
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Tab") {
+                e.preventDefault();
+                this.toggleInventory();
+            }
+        });
     }
 
+    private toggleInventory(): void {
+        if (this.inventoryVisible) {
+            this.closeInventory();
+        } else {
+            this.openInventory();
+        }
+    }
+
+    private openInventory(): void {
+        if (this.inventoryUI) return;
+        this.inventoryUI = AdvancedDynamicTexture.CreateFullscreenUI("InventoryUI", true, this.scene);
+        this.inventoryVisible = true;
+        this.selectedInventoryIndex = 0;
+        this.inventorySlots = [];
+
+        const bg = new Rectangle();
+        bg.width = "500px";
+        bg.height = "400px";
+        bg.thickness = 2;
+        bg.background = "rgba(30,30,30,0.95)";
+        bg.cornerRadius = 20;
+        bg.color = "white";
+        bg.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        bg.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        this.inventoryUI.addControl(bg);
+
+        const title = new TextBlock();
+        title.text = "Inventory";
+        title.fontSize = 32;
+        title.color = "white";
+        title.height = "60px";
+        title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        bg.addControl(title);
+
+        // --- Guide text ---
+        const guideText = new TextBlock();
+        guideText.text = "Arrow keys to navigate, Enter to use";
+        guideText.fontSize = 18;
+        guideText.color = "#bbb";
+        guideText.height = "30px";
+        guideText.width = "300px";
+        guideText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        guideText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        guideText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        guideText.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        guideText.top = "-20px";
+        bg.addControl(guideText);
+
+        // Inventory grid (2 rows x 3 cols = 6 slots)
+        const grid = new Grid();
+        grid.width = "90%";
+        grid.height = "70%";
+        grid.addColumnDefinition(1 / 3);
+        grid.addColumnDefinition(1 / 3);
+        grid.addColumnDefinition(1 / 3);
+        grid.addRowDefinition(1 / 2);
+        grid.addRowDefinition(1 / 2);
+        grid.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        grid.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        bg.addControl(grid);
+
+        const items = this.player.inventory.getItems();
+        for (let i = 0; i < 6; i++) {
+            const row = Math.floor(i / 3);
+            const col = i % 3;
+            const slot = new Rectangle();
+            slot.width = "120px";
+            slot.height = "80px";
+            slot.thickness = 1;
+            slot.color = "#888";
+            slot.background = "#222";
+            slot.cornerRadius = 10;
+            slot.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+            slot.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+
+            if (items[i]) {
+                const item = items[i];
+                const itemText = new TextBlock();
+                itemText.text = item.name;
+                itemText.color = "white";
+                itemText.fontSize = 20;
+                slot.addControl(itemText);
+
+                let lastClick = 0;
+                slot.onPointerUpObservable.add(() => {
+                    const now = Date.now();
+                    if (now - lastClick < 400) {
+                        if (item.use && item.use(this.player)) {
+                            this.player.inventory.removeItem(item.name);
+                            this.closeInventory();
+                        }
+                    }
+                    lastClick = now;
+                });
+            }
+
+            grid.addControl(slot, row, col);
+            this.inventorySlots.push(slot);
+        }
+
+        // Highlight the selected slot
+        const updateHighlight = () => {
+            for (let i = 0; i < this.inventorySlots.length; i++) {
+                this.inventorySlots[i].thickness = (i === this.selectedInventoryIndex) ? 4 : 1;
+                this.inventorySlots[i].color = (i === this.selectedInventoryIndex) ? "#2196f3" : "#888";
+            }
+        };
+        updateHighlight();
+
+        // Keyboard navigation
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (!this.inventoryVisible) return;
+            let row = Math.floor(this.selectedInventoryIndex / 3);
+            let col = this.selectedInventoryIndex % 3;
+            if (e.code === "ArrowRight") {
+                col = (col + 1) % 3;
+            } else if (e.code === "ArrowLeft") {
+                col = (col + 2) % 3;
+            } else if (e.code === "ArrowDown") {
+                row = (row + 1) % 2;
+            } else if (e.code === "ArrowUp") {
+                row = (row + 1) % 2;
+            } else if (e.code === "Enter") {
+                const itemsArr = Object.values(this.player.inventory.getItems());
+                const item = itemsArr[this.selectedInventoryIndex];
+                if (item && item.use && item.use(this.player)) {
+                    this.player.inventory.removeItem(item.name);
+                    this.closeInventory();
+                }
+            } else if (e.code === "Tab" || e.code === "Escape") {
+                e.preventDefault();
+                this.closeInventory();
+                return;
+            } else {
+                return;
+            }
+            this.selectedInventoryIndex = row * 3 + col;
+            updateHighlight();
+            e.preventDefault();
+        };
+        window.addEventListener("keydown", onKeyDown);
+
+        // Remove listener on close
+        this.inventoryUI.onDisposeObservable.add(() => {
+            window.removeEventListener("keydown", onKeyDown);
+        });
+    }
+
+    private closeInventory(): void {
+        if (this.inventoryUI) {
+            this.inventoryUI.dispose();
+            this.inventoryUI = null;
+        }
+        this.inventoryVisible = false;
+    }
 
     public _setupCamera(): void {
         const canvas = this.scene.getEngine().getRenderingCanvas();
@@ -171,7 +353,7 @@ export class PlayerView {
         playerPos.y += PlayerView.CAMERA_HEIGHT;
         this.camera.position.copyFrom(playerPos);
 
-        // (Optional) Update the player visual (if any) to follow the camera’s yaw:
+        // Update the player visual (if any) to follow the camera’s yaw:
         if (this.player.controller.assets?.mesh) {
             // Only update the Y rotation from the camera so the player faces the same way
             const yaw = this.camera.rotation.y;
@@ -256,5 +438,26 @@ export class PlayerView {
                 }
             }
         }
+    }
+    public showNotification(message: string, color: string = "red", duration: number = 5000): void {
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("NotificationUI", true, this.scene);
+
+        const notif = new TextBlock();
+        notif.text = message;
+        notif.color = color;
+        notif.fontSize = 24;
+        notif.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        notif.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        notif.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        notif.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        notif.paddingRight = "30px";
+        notif.paddingBottom = "30px";
+        notif.outlineColor = "#000";
+        notif.outlineWidth = 4;
+        advancedTexture.addControl(notif);
+
+        setTimeout(() => {
+            advancedTexture.dispose();
+        }, duration);
     }
 }
