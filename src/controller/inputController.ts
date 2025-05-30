@@ -1,4 +1,4 @@
-import { Scene, ActionManager, ExecuteCodeAction } from "@babylonjs/core";
+import { Scene, ActionManager, ExecuteCodeAction, PointerEventTypes } from "@babylonjs/core";
 
 export class InputController {
     public inputMap: { [key: string]: boolean } = {};
@@ -24,6 +24,16 @@ export class InputController {
                 this.inputMap[evt.sourceEvent.key] = false;
             })
         );
+
+        // Register pointer down and up for left mouse click (button 0)
+        scene.onPointerObservable.add((pointerInfo) => {
+            if (pointerInfo.type === PointerEventTypes.POINTERDOWN && pointerInfo.event.button === 0) {
+                this.shoot = true;
+            }
+            if (pointerInfo.type === PointerEventTypes.POINTERUP && pointerInfo.event.button === 0) {
+                this.shoot = false;
+            }
+        });
     }
 
     public update(): void {
@@ -35,7 +45,6 @@ export class InputController {
         // this.cameraZoom = (this.inputMap["ArrowUp"] ? 1 : 0) - (this.inputMap["ArrowDown"] ? 1 : 0); // Arrow keys for camera zoom
         // M button for debug teleport
         // this.debug = this.inputMap["m"] ? 1 : 0;
-        this.shoot = this.inputMap["f"]; // F key for shooting
-        
+        // this.shoot = this.inputMap["f"]; // F key for shooting (removed)
     }
 }

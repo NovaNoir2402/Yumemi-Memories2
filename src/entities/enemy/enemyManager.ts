@@ -24,27 +24,32 @@ export class EnemyManager {
     }
 
         // Call this to spawn enemies matching the current threat rating
-    public spawnEnemiesForThreat(room: RoomModel): void {
-        let remainingThreat = this.threatRating;
-        const possibleFactories = ENEMY_FACTORIES
-            .map(factory => factory(this._scene, this._player, this._getRandomSpawnPosition(room)))
-            .filter(enemy => enemy.threatLevel <= remainingThreat);
+    public async spawnEnemiesForThreat(room: RoomModel): Promise<void> {
+    let remainingThreat = this.threatRating;
+    const possibleFactories = ENEMY_FACTORIES
+        .map(factory => factory(this._scene, this._player, this._getRandomSpawnPosition(room)))
+        .filter(enemy => enemy.threatLevel <= remainingThreat);
 
-        const chosenEnemies: Enemy[] = [];
+    const chosenEnemies: Enemy[] = [];
 
-        while (remainingThreat > 0 && possibleFactories.length > 0) {
-            const candidates = possibleFactories.filter(e => e.threatLevel <= remainingThreat);
-            if (candidates.length === 0) break;
-            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-            chosenEnemies.push(chosen);
-            remainingThreat -= chosen.threatLevel;
-        }
-
-        this._enemies.push(...chosenEnemies);
-
-        // Increase threat rating for next call
-        this.threatRating += 1;
+    while (remainingThreat > 0 && possibleFactories.length > 0) {
+        const candidates = possibleFactories.filter(e => e.threatLevel <= remainingThreat);
+        if (candidates.length === 0) break;
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        chosenEnemies.push(chosen);
+        remainingThreat -= chosen.threatLevel;
     }
+
+    // Spawn with delay to avoid overlap
+    for (const element of chosenEnemies) {
+        this._enemies.push(element);
+        await new Promise(res => setTimeout(res, 500)); // 0.5 second delay
+    }
+
+    // Increase threat rating for next call
+    this.threatRating += 1;
+    console.log(`Spawned ${chosenEnemies.length} enemies for threat rating ${this.threatRating}`);
+}
 
     public spawnEnemies(
         room: RoomModel,

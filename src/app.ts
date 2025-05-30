@@ -165,7 +165,7 @@ class App {
         // Dispose previous scene if exists
         this._scene?.dispose();
         // Create a new scene for the game
-        const scene =  new Scene(this._engine);
+        const scene = new Scene(this._engine);
         scene.clearColor = SCENE_COLOR_GAME;
 
         const havokInterface = await HavokPhysics();
@@ -220,48 +220,48 @@ class App {
     private _loseOverlay: AdvancedDynamicTexture | null = null;
 
     private async _goToLose(): Promise<void> {
-    // Remove previous overlay if it exists
-    if (this._loseOverlay) {
-        this._loseOverlay.dispose();
+        // Remove previous overlay if it exists
+        if (this._loseOverlay) {
+            this._loseOverlay.dispose();
+        }
+
+        this._loseOverlay = AdvancedDynamicTexture.CreateFullscreenUI("LoseUI");
+
+        // Create a popup rectangle
+        const popup = new Rectangle("popup");
+        popup.width = "800px";
+        popup.height = "200px";
+        popup.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        popup.background = "rgba(30, 30, 30, 0.95)";
+        popup.cornerRadius = 20;
+        popup.thickness = 2;
+        popup.color = "white";
+        this._loseOverlay.addControl(popup);
+
+        // Game Over text
+        const loseText = new TextBlock();
+        loseText.text = "GAME OVER";
+        loseText.color = "red";
+        loseText.fontSize = 48;
+        loseText.height = "80px";
+        loseText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        loseText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(loseText);
+
+        // Info text
+        const infoText = new TextBlock();
+        infoText.text = "Please refresh the browser to restart the game.";
+        infoText.color = "white";
+        infoText.fontSize = 24;
+        infoText.height = "60px";
+        infoText.top = "60px";
+        infoText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        infoText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(infoText);
+
+        this._state = State.LOSE;
     }
-
-    this._loseOverlay = AdvancedDynamicTexture.CreateFullscreenUI("LoseUI");
-
-    // Create a popup rectangle
-    const popup = new Rectangle("popup");
-    popup.width = "800px";
-    popup.height = "200px";
-    popup.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    popup.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    popup.background = "rgba(30, 30, 30, 0.95)";
-    popup.cornerRadius = 20;
-    popup.thickness = 2;
-    popup.color = "white";
-    this._loseOverlay.addControl(popup);
-
-    // Game Over text
-    const loseText = new TextBlock();
-    loseText.text = "GAME OVER";
-    loseText.color = "red";
-    loseText.fontSize = 48;
-    loseText.height = "80px";
-    loseText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    loseText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    popup.addControl(loseText);
-
-    // Info text
-    const infoText = new TextBlock();
-    infoText.text = "Please refresh the browser to restart the game.";
-    infoText.color = "white";
-    infoText.fontSize = 24;
-    infoText.height = "60px";
-    infoText.top = "60px";
-    infoText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    infoText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    popup.addControl(infoText);
-
-    this._state = State.LOSE;
-}
 
     private async _goToCutScene(): Promise<void> {
         this._scene?.dispose();
@@ -289,72 +289,72 @@ class App {
     }
 
     // Add this function inside your App class:
-private _createMinimap(level: Level, player: Player): { update: () => void } {
-    const minimapUI = AdvancedDynamicTexture.CreateFullscreenUI("MinimapUI");
-    const minimapContainer = new Rectangle("minimapContainer");
-    minimapContainer.width = "180px";
-    minimapContainer.height = "180px";
-    minimapContainer.thickness = 2;
-    minimapContainer.background = "rgba(0,0,0,0.5)";
-    minimapContainer.cornerRadius = 10;
-    minimapContainer.color = "white";
-    minimapContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    minimapContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    minimapContainer.top = "20px";
-    minimapContainer.left = "-20px";
-    minimapUI.addControl(minimapContainer);
+    private _createMinimap(level: Level, player: Player): { update: () => void } {
+        const minimapUI = AdvancedDynamicTexture.CreateFullscreenUI("MinimapUI");
+        const minimapContainer = new Rectangle("minimapContainer");
+        minimapContainer.width = "180px";
+        minimapContainer.height = "180px";
+        minimapContainer.thickness = 2;
+        minimapContainer.background = "rgba(0,0,0,0.5)";
+        minimapContainer.cornerRadius = 10;
+        minimapContainer.color = "white";
+        minimapContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        minimapContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        minimapContainer.top = "20px";
+        minimapContainer.left = "-20px";
+        minimapUI.addControl(minimapContainer);
 
-    const roomsGrid = level.getRooms();
-    const gridRows = roomsGrid.length;
-    const gridCols = roomsGrid[0].length;
+        const roomsGrid = level.getRooms();
+        const gridRows = roomsGrid.length;
+        const gridCols = roomsGrid[0].length;
 
-    // Store rectangles for updating highlight
-    const roomRects: Rectangle[][] = [];
+        // Store rectangles for updating highlight
+        const roomRects: Rectangle[][] = [];
 
-    for (let y = 0; y < gridRows; y++) {
-        roomRects[y] = [];
-        for (let x = 0; x < gridCols; x++) {
-            const room = roomsGrid[y][x];
-            if (!room) continue;
+        for (let y = 0; y < gridRows; y++) {
+            roomRects[y] = [];
+            for (let x = 0; x < gridCols; x++) {
+                const room = roomsGrid[y][x];
+                if (!room) continue;
 
-            const roomRect = new Rectangle();
-            roomRect.width = "18px";
-            roomRect.height = "18px";
-            roomRect.thickness = 1;
-            roomRect.background = "#bbb";
-            roomRect.color = "#333";
-            roomRect.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-            roomRect.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-            // Position in grid
-            roomRect.left = `${10 + x * 20}px`;
-            roomRect.top = `${10 + y * 20}px`;
-            minimapContainer.addControl(roomRect);
-            roomRects[y][x] = roomRect;
+                const roomRect = new Rectangle();
+                roomRect.width = "18px";
+                roomRect.height = "18px";
+                roomRect.thickness = 1;
+                roomRect.background = "#bbb";
+                roomRect.color = "#333";
+                roomRect.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                roomRect.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+                // Position in grid
+                roomRect.left = `${10 + x * 20}px`;
+                roomRect.top = `${10 + y * 20}px`;
+                minimapContainer.addControl(roomRect);
+                roomRects[y][x] = roomRect;
+            }
         }
-    }
 
-    // Return an update function to be called in the render loop
-    return {
-        update: () => {
-            let currentRoom = player.controller?.currentRoom;
-            for (let y = 0; y < gridRows; y++) {
-                for (let x = 0; x < gridCols; x++) {
-                    const rect = roomRects[y][x];
-                    if (!rect) continue;
-                    if (roomsGrid[y][x] === currentRoom) {
-                        rect.background = "#ff0";
-                        rect.thickness = 3;
-                        rect.color = "#f80";
-                    } else {
-                        rect.background = "#bbb";
-                        rect.thickness = 1;
-                        rect.color = "#333";
+        // Return an update function to be called in the render loop
+        return {
+            update: () => {
+                let currentRoom = player.controller?.currentRoom;
+                for (let y = 0; y < gridRows; y++) {
+                    for (let x = 0; x < gridCols; x++) {
+                        const rect = roomRects[y][x];
+                        if (!rect) continue;
+                        if (roomsGrid[y][x] === currentRoom) {
+                            rect.background = "#ff0";
+                            rect.thickness = 3;
+                            rect.color = "#f80";
+                        } else {
+                            rect.background = "#bbb";
+                            rect.thickness = 1;
+                            rect.color = "#333";
+                        }
                     }
                 }
             }
-        }
-    };
-}
+        };
+    }
 }
 
 let app = new App();

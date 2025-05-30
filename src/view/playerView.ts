@@ -1,10 +1,6 @@
-import { ArcRotateCamera, Vector3, Scene, MeshBuilder, Mesh, Quaternion, Matrix } from "@babylonjs/core";
+import { FreeCamera, Vector3, Scene, MeshBuilder, Mesh, Quaternion } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Rectangle, Control, TextBlock, StackPanel } from "@babylonjs/gui";
 import { Player } from "../entities/player/player";
-
-import {
-    Ray
-} from "@babylonjs/core";
 
 export class PlayerView {
     private player: Player;
@@ -13,21 +9,14 @@ export class PlayerView {
     private healthBarBackground: Rectangle;
     private healthBarForeground: Rectangle;
 
-    public camera: ArcRotateCamera;
-    private cameraTarget: Mesh;
-
+    public camera: FreeCamera;
     private hud: AdvancedDynamicTexture;
     private healthBar: Rectangle;
     private healthText: TextBlock;
 
-    private static readonly CAMERA_HEIGHT = 2;
-    private static readonly CAMERA_Z_OFFSET = 20;
-    private static readonly CAMERA_ROTATION_SPEED = Math.PI / 8;
-    private static readonly CAMERA_ZOOM_SPEED = 1;
-    private static readonly CAMERA_MIN_RADIUS = 0.1;
-    private static readonly CAMERA_MAX_RADIUS = 15;
-    private static readonly CAMERA_ROTATION_FRAMES = 30;
-    private static readonly CAMERA_ROTATION_INTERVAL_MS = 8;
+    private static readonly CAMERA_HEIGHT = 1.6; // Adjust for FPS eye level
+
+    private _onMouseMove: (event: MouseEvent) => void;
 
     constructor(player: Player, scene: Scene) {
         this.player = player;
@@ -77,10 +66,10 @@ export class PlayerView {
         });
     }
 
-    private _onMouseMove: (event: MouseEvent) => void;
 
     public _setupCamera(): void {
         const canvas = this.scene.getEngine().getRenderingCanvas();
+
         canvas.addEventListener("click", () => {
             canvas.requestPointerLock();
             if (canvas.requestFullscreen) {
@@ -88,94 +77,42 @@ export class PlayerView {
             }
         });
 
-        // Prevent default actions for mouse buttons
-        // canvas.addEventListener("mousedown", (e) => e.preventDefault());
-        // canvas.addEventListener("mouseup", (e) => e.preventDefault());
-        // canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+        // Create a FreeCamera for FPS controls
+        this.camera = new FreeCamera("FpsCamera", new Vector3(0, PlayerView.CAMERA_HEIGHT, 0), this.scene);
+        // Disable built-in inputs
+        this.camera.inputs.clear();
 
-        this.camera = new ArcRotateCamera("Camera", 0, 0, 0, Vector3.Zero(), this.scene);
-        this.camera.setPosition(new Vector3(0, PlayerView.CAMERA_HEIGHT, PlayerView.CAMERA_Z_OFFSET));
-        this.camera.panningSensibility = 0;
-        this.camera.wheelPrecision = 0;
+        this.camera.inertia = 0;
+        this.camera.angularSensibility = 500; // Adjust to taste
         this.scene.activeCamera = this.camera;
-        this.camera.beta = Math.PI / 4;
 
+        // Set up our custom mouse movement handler
         this._onMouseMove = (event: MouseEvent) => {
             if (document.pointerLockElement === canvas) {
-                const sensitivity = 0.002; // Adjust as needed
-                this.camera.alpha -= event.movementX * sensitivity;
-                this.camera.beta -= event.movementY * sensitivity;
-                // Clamp beta to avoid flipping
-                this.camera.beta = Math.max(0.25, Math.min(Math.PI / 2, this.camera.beta));
+                const sensitivity = 0.002;
+                // Update yaw and pitch regardless of mouse button state
+                this.camera.rotation.y += event.movementX * sensitivity;
+                this.camera.rotation.x += event.movementY * sensitivity;
+                // Clamp pitch between -90° and +90° (in radians)
+                const limit = Math.PI / 2 - 0.1;
+                this.camera.rotation.x = Math.max(-limit, Math.min(limit, this.camera.rotation.x));
             }
         };
         canvas.addEventListener("mousemove", this._onMouseMove);
-
     }
-
-    // --- Camera Logic ---
-    private _isRotating = false;
-    private _isZooming = false;
 
     public updateCamera(): void {
-        // 1) On cible toujours le joueur
-        const target = this.player._body.transformNode.position;
-        this.camera.setTarget(target);
+        if (!this.camera || !this.player._body || !this.scene) return;
+        // Position the camera at the player's head.
+        const playerPos = this.player._body.transformNode.position.clone();
+        playerPos.y += PlayerView.CAMERA_HEIGHT;
+        this.camera.position.copyFrom(playerPos);
 
-        // 2) On calcule la direction du joueur vers la caméra
-        const direction = this.camera.position.subtract(target).normalize();
-
-        // 3) On lance un rayon depuis le joueur vers la caméra
-        const ray = new Ray(
-            target,                        // origine = position du joueur
-            direction,                     // vers la caméra
-            PlayerView.CAMERA_MAX_RADIUS   // portée max = portée max autorisée
-        );
-        const pickInfo = this.scene.pickWithRay(
-            ray,
-            mesh => mesh !== this.player._mesh // on ignore le corps du joueur
-        );
-
-        // 4) On détermine la distance souhaitée
-        let targetRadius = PlayerView.CAMERA_Z_OFFSET;
-        if (pickInfo.hit) {
-            targetRadius = Math.max(pickInfo.distance - 0.5, PlayerView.CAMERA_MIN_RADIUS);
-        }
-
-        // 5) On interpole la radius de manière fluide
-        const smoothingFactor = 0.1;
-        this.camera.radius += (targetRadius - this.camera.radius) * smoothingFactor;
-        this.camera.radius = Math.min(this.camera.radius, PlayerView.CAMERA_MAX_RADIUS);
-
-        // // 6) Continuous rotation while the button is pressed
-        // if (this.player.controller.input.cameraRotation !== 0) {
-        //     this._startContinuousRotation(this.player.controller.input.cameraRotation);
-        // } else {
-        //     this._stopContinuousRotation();
-        // }
-
-        // 7) Zoom manuel (molette / touches)
-        if (this.player.controller.input.cameraZoom !== 0) {
-            const newBeta = this.camera.beta + this.player.controller.input.cameraZoom * 0.02;
-            this.camera.beta = Math.min(Math.max(newBeta, 0.5), Math.PI / 2.5);
-        }
-    }
-
-    private _rotationInterval: NodeJS.Timeout | null = null;
-
-    private _startContinuousRotation(direction: number): void {
-        if (this._rotationInterval) return; // Prevent multiple intervals
-
-        const step = direction * PlayerView.CAMERA_ROTATION_SPEED * 0.02; // Adjust speed as needed
-        this._rotationInterval = setInterval(() => {
-            this.camera.alpha += step;
-        }, PlayerView.CAMERA_ROTATION_INTERVAL_MS);
-    }
-
-    private _stopContinuousRotation(): void {
-        if (this._rotationInterval) {
-            clearInterval(this._rotationInterval);
-            this._rotationInterval = null;
+        // (Optional) Update the player visual (if any) to follow the camera’s yaw:
+        if (this.player.controller.assets?.mesh) {
+            // Only update the Y rotation from the camera so the player faces the same way
+            const yaw = this.camera.rotation.y;
+            this.player.controller.assets.mesh.rotationQuaternion = Quaternion.FromEulerAngles(0, yaw, 0);
         }
     }
 }

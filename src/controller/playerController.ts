@@ -8,6 +8,10 @@ import {
     PhysicsMotionType,
     Ray,
     Mesh,
+    SceneLoader,
+    AnimationGroup,
+    AbstractMesh,
+    Quaternion
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
@@ -15,6 +19,8 @@ import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 import "@babylonjs/core/Animations/animatable";
 
 import { InputController } from "./inputController";
+import { Bullet } from "../entities/player/bullet";
+import { Environment } from "../environment";
 import { RoomModel } from "../model/roomModel";
 import { Player } from "../entities/player/player";
 import { DoorModel } from "../model/doorModel";
@@ -28,8 +34,10 @@ export class PlayerController {
     public currentRoom: RoomModel | null = null;
     private readonly _level: Level;
     public onDeath?: () => void;
-    public assets: { mesh: Mesh; } | null = null;
+    public assets: { mesh: AbstractMesh; } | null = null;
     public player: Player;
+    public rootMesh: Mesh | null = null;
+    public animationGroups: AnimationGroup[] = [];
 
     // Constants
     private static readonly BODY_HEIGHT = 2;
@@ -45,10 +53,10 @@ export class PlayerController {
     private static readonly DAMPING_FACTOR = 0.95;
     private static readonly SLOPE_GRAVITY = 9;
     private static readonly SLOPE_ANGLE = Math.PI / 6;
-    private static readonly TELEPORT_COOLDOWN_MS = 5000;
+    private static readonly TELEPORT_COOLDOWN_MS = 1000;
     private static readonly RAY_LENGTH = 2;
     private static readonly BULLET_DAMAGE = 30;
-    
+
     private static readonly SHOOT_COOLDOWN_MS = 300;
     private static readonly DAMAGE_COOLDOWN_MS = 2000;
 
@@ -58,30 +66,65 @@ export class PlayerController {
         this.currentRoom = room;
         this.player = player;
         this._level = level;
-      }
+    }
 
-    public initialize(): void {
-        const transformNode = new TransformNode("playerBodyTransform", this.scene);
-        transformNode.parent = this.player;
-      
-        this.player._mesh = MeshBuilder.CreateCylinder("playerBody", {
+    public async initialize(): Promise<void> {
+        // Create a root transform node for the player
+        const playerRoot = new TransformNode("playerRoot", this.scene);
+
+        // Create a collision mesh (cylinder)
+        const collisionMesh = MeshBuilder.CreateCylinder("playerCollision", {
             diameter: PlayerController.BODY_DIAMETER,
             height: PlayerController.BODY_HEIGHT
         }, this.scene);
-        this.player._mesh.position.y = PlayerController.BODY_Y_POSITION;
-        this.player._mesh.parent = transformNode;
+        collisionMesh.isVisible = false;
+        collisionMesh.isPickable = false;
+        collisionMesh.position.y = 0; // Adjust to match the player's height
 
-        const material = new StandardMaterial("playerMaterial", this.scene);
-        material.diffuseColor = PlayerController.BODY_COLOR;
-        this.player._mesh.material = material;
-        
-        this.player._initPhysicsMesh(this.player._mesh, PhysicsMotionType.DYNAMIC, PlayerController.BODY_MASS, PlayerController.ANGULAR_DAMPING);
+        // Parent the collision mesh to the root node
+        collisionMesh.parent = playerRoot;
+
+        // Import the player model
+        const result = await SceneLoader.ImportMeshAsync(
+            null,
+            "./models/",
+            "character-animated.glb",
+            this.scene
+        );
+        const root = result.meshes[0];
+        root.name = "playerVisual";
+        root.parent = collisionMesh;
+        root.isPickable = false;
+
+        // Offset the imported mesh so its feet are at the bottom of the collision cylinder
+        root.position.y = -PlayerController.BODY_HEIGHT / 2;
+
+        // Disable picking for all child meshes
+        root.getChildMeshes().forEach((m) => {
+            m.isPickable = false;
+        });
+
+        // Attach the collision mesh to the player entity
+        this.player._mesh = collisionMesh;
+        this.rootMesh = collisionMesh;
+        this.player._initPhysicsMesh(
+            collisionMesh,
+            PhysicsMotionType.DYNAMIC,
+            PlayerController.BODY_MASS,
+            PlayerController.ANGULAR_DAMPING
+        );
         this._setupCollisionListeners();
 
+        // Set the physics body's transform node to the root node
+        this.player._body.transformNode = playerRoot;
         this.player._body.disablePreStep = false;
-        this.player._body.transformNode.position.y = PlayerController.BODY_Y_POSITION + 1;
+        this.player._body.transformNode.position.y = 0; // Start at ground level
+
+        // Store animation groups
+        this.assets = { mesh: root };
+        this.animationGroups = result.animationGroups;
     }
-    
+
     private _setupCollisionListeners(): void {
         const observable = this.player._body.getCollisionObservable();
 
@@ -108,10 +151,10 @@ export class PlayerController {
 
         observable.add(event => {
             if (event.type !== "COLLISION_STARTED") return;
-        
+
             const otherTransform = event.collidedAgainst?.transformNode;
             if (!otherTransform) return;
-        
+
             const entity = otherTransform.metadata?.entity;
             if (entity && entity._isLethal && entity._isLethalPlayer) {
                 const damage = (entity as any).damage ?? 10;
@@ -162,7 +205,7 @@ export class PlayerController {
                 break;
         }
         doorPosition.y += PlayerController.BODY_Y_POSITION;
-        if(this.currentRoom.isCompleted()) {
+        if (this.currentRoom.isCompleted()) {
             this._teleportToRoom(targetRoom, this._level, doorPosition);
             this.player._canTeleport = false;
             setTimeout(() => {
@@ -174,6 +217,7 @@ export class PlayerController {
     private _teleportToRoom(room: RoomModel, level: Level, doorPosition: Vector3): void {
         this.player._body.disablePreStep = false;
         this.player._body.transformNode.position.copyFrom(doorPosition);
+
         level.playerEnterRoom(room);
         this.currentRoom = room;
     }
@@ -207,10 +251,28 @@ export class PlayerController {
             this.player._body.setAngularVelocity(Vector3.Zero());
         }
 
-        if (this.player._canShoot) {
+        if (this.player._canShoot && this.input.shoot) {
             // this.input.shoot = false;
             this.player._weapon._shootBullet();
         }
+        // --- Character model rotation to face camera direction ---
+    if (this.assets?.mesh && this.player.view?.camera) {
+        // Get the camera's forward direction, ignore Y
+        const camForward = this.player.view.camera.getForwardRay().direction.clone();
+        camForward.y = 0;
+        camForward.normalize();
+
+        // If the direction is valid, rotate the mesh
+        if (camForward.lengthSquared() > 0.0001) {
+            // Babylon's FromLookDirectionLH expects forward and up
+            const targetQuat = Quaternion.FromLookDirectionLH(camForward, Vector3.Up());
+            this.assets.mesh.rotationQuaternion = Quaternion.Slerp(
+                this.assets.mesh.rotationQuaternion ?? Quaternion.Identity(),
+                targetQuat,
+                0.2 // Smoothing factor, adjust as needed
+            );
+        }
+    }
     }
 
     private _applyMovement(direction: Vector3): void {
