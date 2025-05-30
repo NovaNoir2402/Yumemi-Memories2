@@ -51,6 +51,10 @@ export class Player extends Entity {
         this.view.updateCamera();
     }
 
+    public switchWeapon(weaponName: string): void {
+        this._weapon = new Weapon(this.scene, weaponName, this);
+    }
+
     public takeDamage(amount: number): void {
         if (!this._canTakeDamage) return;
 

@@ -14,6 +14,9 @@ export class PlayerView {
     private hud: AdvancedDynamicTexture;
     private healthBar: Rectangle;
     private healthText: TextBlock;
+    private weapons: string[] = ["pistol", "sniper", "shotgun", "auto"];
+    private currentWeaponIndex: number = 0;
+    private weaponBoxes: Rectangle[] = [];
 
     private static readonly CAMERA_HEIGHT = 1.6; // Adjust for FPS eye level
 
@@ -142,8 +145,8 @@ export class PlayerView {
         inventoryBtn.background = "#444";
         inventoryBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         inventoryBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        inventoryBtn.top = "-10px";
-        inventoryBtn.left = "10px";
+        inventoryBtn.top = "-130px";
+        inventoryBtn.left = "20px";
         inventoryBtn.onPointerUpObservable.add(() => this.toggleInventory());
         advancedTexture.addControl(inventoryBtn);
 
@@ -153,6 +156,70 @@ export class PlayerView {
                 e.preventDefault();
                 this.toggleInventory();
             }
+        });
+
+        this.setupWeaponSystem(this.scene, advancedTexture);
+
+        window.addEventListener("keydown", (e) => {
+            const validKeys = ["Digit1", "Digit2", "Digit3", "Digit4","Numpad1", "Numpad2", "Numpad3", "Numpad4"];
+            if (validKeys.includes(e.code)) {
+                e.preventDefault();
+                this.currentWeaponIndex = parseInt(e.code.replace('Digit','').replace('Numpad','')) - 1;
+                this.updateWeaponUI();
+                this.player.switchWeapon(this.weapons[this.currentWeaponIndex]);
+            }
+        });
+
+    }
+
+    private setupWeaponSystem(scene, advancedTexture: AdvancedDynamicTexture): void {
+        const weapons =  ["pistol", "sniper", "shotgun", "auto"];
+
+        const weaponUIContainer = new StackPanel();
+        weaponUIContainer.width = "400px";
+        weaponUIContainer.height = "100px";
+        weaponUIContainer.isVertical = false;
+        weaponUIContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        weaponUIContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        weaponUIContainer.paddingBottom = "20px";
+        weaponUIContainer.paddingLeft = "20px";
+        advancedTexture.addControl(weaponUIContainer);
+
+        weapons.forEach((weaponName, index) => {
+            const box = new Rectangle();
+            box.width = "80px";
+            box.height = "80px";
+            box.color = "#ffffff";
+            box.thickness = 4;
+            box.background = "#222";
+            box.cornerRadius = 20;
+
+            const label = new TextBlock();
+            label.text = `${index + 1}: ${weaponName}`;
+            label.color = "white";
+            label.fontSize = 16;
+
+            box.addControl(label);
+            weaponUIContainer.addControl(box);
+            this.weaponBoxes.push(box);
+
+            if (index < weapons.length - 1) {
+                const spacer = new Rectangle();
+                spacer.width = "5px";
+                spacer.height = "1px";
+                spacer.thickness = 0;
+                spacer.background = "transparent";
+                weaponUIContainer.addControl(spacer);
+            }
+        });
+        this.updateWeaponUI();
+    }
+
+
+    private updateWeaponUI(): void {
+        console.log(`Switching to weapon: ${this.weapons[this.currentWeaponIndex]}`);
+        this.weaponBoxes.forEach((box, index) => {
+            box.color = (index === this.currentWeaponIndex) ? "#00ff00" : "white";
         });
     }
 

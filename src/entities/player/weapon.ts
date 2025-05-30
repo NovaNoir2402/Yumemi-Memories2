@@ -17,17 +17,18 @@ export class Weapon {
     private _bulletStyle: string;
     public player: Player;
 
-    private static readonly SHOOT_COOLDOWN_MS = 300;
+    private _cooldown;
     // private static readonly BULLET_DAMAGE = 30;
     private static readonly PISTOL_DAMAGE = 30;
-    private static readonly SHOTGUN_DAMAGE = 20;
+    private static readonly SHOTGUN_DAMAGE = 15;
     private static readonly SNIPER_DAMAGE = 100;
-    private static readonly AUTO_DAMAGE = 15;
+    private static readonly AUTO_DAMAGE = 5;
 
     constructor(scene: Scene, bulletStyle: string, player: Player) {
         this._scene = scene;
         this.player = player;
         this._bulletStyle = bulletStyle;
+        this._cooldown = 300;
     }
 
     public _shootBullet(): void {
@@ -35,7 +36,7 @@ export class Weapon {
         this.shoot(this._bulletStyle);
         setTimeout(() => {
             this.player._canShoot = true;
-        }, Weapon.SHOOT_COOLDOWN_MS);
+        }, this._cooldown);
     }
 
     private shoot(weaponType: string): void {
@@ -45,12 +46,15 @@ export class Weapon {
                 break;
             case "shotgun":
                 this._shootShotgun();
+                this._cooldown = 750;
                 break;
             case "sniper":
                 this._shootSniper();
+                this._cooldown = 1000;
                 break;
             case "auto":
                 this._shootAuto();
+                this._cooldown = 100;
                 break;
             default:
                 this._shootPistol(); // fallback
@@ -85,7 +89,7 @@ export class Weapon {
     private _shootShotgun(): void {
         const origin = this._getShootOrigin();
         const baseDir = this._getForwardDirection();
-        const spreadAngle = 10; // degrés
+        const spreadAngle = 20; // degrés
         const pellets = 6;
 
         for (let i = 0; i < pellets; i++) {
@@ -106,7 +110,7 @@ export class Weapon {
     private _shootAuto(): void {
         const origin = this._getShootOrigin();
         const baseDir = this._getForwardDirection();
-        const dir = this._applySpread(baseDir, 3); // léger écart
+        const dir = this._applySpread(baseDir, 10); // léger écart
         new Bullet(this._scene, origin, dir, Weapon.AUTO_DAMAGE);
     }
 
