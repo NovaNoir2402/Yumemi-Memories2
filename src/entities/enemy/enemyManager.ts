@@ -2,13 +2,13 @@ import { Mesh, Scene, Vector3 } from "@babylonjs/core";
 import { Enemy } from "./enemy";
 import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
-import { SlimeEnemyDecorator } from "./enemy-types/slimeEnemy";
+import { SlimeEnemy } from "./enemy-types/slimeEnemy";
 
-type EnemyFactory = (scene: Scene, player: Player, spawnPos: Vector3) => Enemy;
+type EnemyType = "slime"; // Add more types as needed
 
-const ENEMY_FACTORIES: EnemyFactory[] = [
-    (scene, player, pos) => new SlimeEnemyDecorator(new Enemy("slime", scene, player, pos, 5, 30)),
-    // Add more factories for other enemy types/decorators
+const ENEMY_TYPES: EnemyType[] = [
+    "slime",
+    // Add more types here
 ];
 
 export class EnemyManager {
@@ -16,40 +16,49 @@ export class EnemyManager {
     private readonly _player: Player;
     private _enemies: Enemy[] = [];
     public threatRating: number = 1;
-    
+
 
     constructor(scene: Scene, player: Player) {
         this._scene = scene;
         this._player = player;
     }
 
-        // Call this to spawn enemies matching the current threat rating
+    // Call this to spawn enemies matching the current threat rating
     public async spawnEnemiesForThreat(room: RoomModel): Promise<void> {
-    let remainingThreat = this.threatRating;
-    const possibleFactories = ENEMY_FACTORIES
-        .map(factory => factory(this._scene, this._player, this._getRandomSpawnPosition(room)))
-        .filter(enemy => enemy.threatLevel <= remainingThreat);
+        let remainingThreat = this.threatRating;
+        const chosenEnemies: Enemy[] = [];
 
-    const chosenEnemies: Enemy[] = [];
+        while (remainingThreat > 0) {
+            // Pick a random enemy type
+            const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
+            const spawnPos = this._getRandomSpawnPosition(room);
 
-    while (remainingThreat > 0 && possibleFactories.length > 0) {
-        const candidates = possibleFactories.filter(e => e.threatLevel <= remainingThreat);
-        if (candidates.length === 0) break;
-        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-        chosenEnemies.push(chosen);
-        remainingThreat -= chosen.threatLevel;
+            let enemy: Enemy;
+            let threatLevel = 1;
+
+            switch (type) {
+                case "slime":
+                default:
+                    enemy = new SlimeEnemy(this._scene, this._player, spawnPos);
+                    threatLevel = enemy.threatLevel;
+                    break;
+                // Add more cases for other enemy types
+            }
+
+            if (threatLevel > remainingThreat) break;
+
+            chosenEnemies.push(enemy);
+            remainingThreat -= threatLevel;
+        }
+
+        // Add them to the manager (or scene) as needed
+        for (const enemy of chosenEnemies) {
+            this._enemies.push(enemy);
+        }
+
+        this.threatRating += 1;
+        console.log(`Spawned ${chosenEnemies.length} enemies for threat rating ${this.threatRating}`);
     }
-
-    // Spawn with delay to avoid overlap
-    for (const element of chosenEnemies) {
-        this._enemies.push(element);
-        await new Promise(res => setTimeout(res, 500)); // 0.5 second delay
-    }
-
-    // Increase threat rating for next call
-    this.threatRating += 1;
-    console.log(`Spawned ${chosenEnemies.length} enemies for threat rating ${this.threatRating}`);
-}
 
     public spawnEnemies(
         room: RoomModel,
@@ -58,48 +67,36 @@ export class EnemyManager {
     ): void {
         for (let i = 0; i < amount; i++) {
             const spawnPos = this._getRandomSpawnPosition(room);
-    
-            // DEBUG VISUEL : une petite sphère rouge
-            /*const marker = MeshBuilder.CreateSphere(`debug_spawn_${i}`, { diameter: 0.3 }, this._scene);
-            marker.position = spawnPos.clone();
-            const mat = new StandardMaterial(`debugMat_${i}`, this._scene);
-            mat.diffuseColor = new Color3(1, 0, 0);
-            marker.material = mat;*/
-    
+
             const enemy = new Enemy(`enemy_${i}`, this._scene, this._player, spawnPos, 20, 100);
             aiBehavior && enemy.setAIBehavior(aiBehavior);
             this._enemies.push(enemy);
         }
     }
-    
+
     private _getRandomSpawnPosition(room: RoomModel): Vector3 {
-        // 1) Récupère le mesh du sol via metadata
         const floor = this._scene.meshes.find(m =>
             m.metadata?.isGround && m.name === `${room.name}_floor`
         ) as Mesh;
-    
+
         if (!floor) {
             console.warn(`Floor mesh not found for room ${room.name}`);
-            // fallback : on retombe sur le calcul manuel
             return this._manualSpawnPosition(room);
         }
-    
-        // 2) Prends son bounding box world‑space
+
         const bbox = floor.getBoundingInfo().boundingBox;
         const min = bbox.minimumWorld;
         const max = bbox.maximumWorld;
-    
-        // 3) Génère X et Z dans l’intervalle [min, max]
+
         const x = Math.random() * (max.x - min.x) + min.x;
         const z = Math.random() * (max.z - min.z) + min.z;
-        const y = max.y + 0.5; // un peu au‑dessus du sol
-    
+        const y = max.y + 0.5;
+
         console.log(`Spawn enemy at (x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)})`);
         return new Vector3(x, y, z);
     }
-    
+
     private _manualSpawnPosition(room: RoomModel): Vector3 {
-        // Même logique que précédemment, en fallback
         const y = room.position.y + 1;
         const minX = room.position.x + 1;
         const maxX = room.position.x + room.size.x - 1;
@@ -109,11 +106,14 @@ export class EnemyManager {
         const z = Math.random() * (maxZ - minZ) + minZ;
         return new Vector3(x, y, z);
     }
-    
+
 
     public updateEnemies(): void {
         this._enemies.forEach((enemy) => enemy.update());
-        if(this.countEnemies() == 0) {
+        // Remove dead enemies from the array
+        this._enemies = this._enemies.filter(enemy => enemy._isActive);
+        //console.log(`Active enemies: ${this.countEnemies()}`);
+        if (this.countEnemies() == 0) {
             this._player.controller.currentRoom.setToCompleted();
         }
     }

@@ -29,6 +29,7 @@ export class Bullet extends Entity {
         this._scene = scene;
         this._isLethal = true;
         this._isLethalPlayer = false;
+        this._isLethalEnemy = true; // Bullets can damage enemies
         this.damage = damage;
         // Create bullet mesh
         this._mesh = MeshBuilder.CreateSphere("bullet", { diameter: Bullet.DIAMETER }, this._scene);

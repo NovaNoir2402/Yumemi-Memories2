@@ -13,7 +13,7 @@ export class Enemy extends Entity {
     public readonly _speed: number = 4;
     public readonly _maxSpeed: number = 5;
     public readonly _player: Player;
-    public _isActive: boolean = true;
+    public _isActive: boolean = false;
     public _aiBehavior: (enemy: Enemy, player: Player) => void;
     public health: number;
     public damage: number;
@@ -51,7 +51,7 @@ export class Enemy extends Entity {
             if (!otherTransform) return;
             
             const entity = otherTransform.metadata?.entity;
-            if (entity && entity._isLethal) {
+            if (entity && entity._isLethal && entity._isLethalEnemy) {
                 console.log(`Enemy ${this.name} collided with lethal entity ${entity.name}`);
                 const damage = (entity as any).damage ?? 10;
                 this.takeDamage(damage);

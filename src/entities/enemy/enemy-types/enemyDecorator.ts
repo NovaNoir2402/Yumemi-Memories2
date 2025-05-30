@@ -1,5 +1,5 @@
 import { Enemy } from "../enemy";
-
+// DOES NOT WORK, DO NOT USE
 export abstract class EnemyDecorator extends Enemy {
     protected _wrapped: Enemy;
 
