@@ -1,4 +1,4 @@
-import { Color3, Mesh, MeshBuilder, Scene, StandardMaterial, Vector3 } from "@babylonjs/core";
+import { Mesh, Scene, Vector3 } from "@babylonjs/core";
 import { Enemy } from "./enemy";
 import { Player } from "../player/player";
 import { RoomModel } from "../../model/roomModel";
@@ -12,8 +12,8 @@ const ENEMY_FACTORIES: EnemyFactory[] = [
 ];
 
 export class EnemyManager {
-    private _scene: Scene;
-    private _player: Player;
+    private readonly _scene: Scene;
+    private readonly _player: Player;
     private _enemies: Enemy[] = [];
     public threatRating: number = 1;
     
@@ -108,6 +108,9 @@ export class EnemyManager {
 
     public updateEnemies(): void {
         this._enemies.forEach((enemy) => enemy.update());
+        if(this.countEnemies() == 0) {
+            this._player.controller.currentRoom.setToCompleted();
+        }
     }
 
     public toggleAllEnemies(): void {
@@ -117,5 +120,9 @@ export class EnemyManager {
     public clearEnemies(): void {
         this._enemies.forEach((enemy) => enemy.dispose());
         this._enemies = [];
+    }
+
+    public countEnemies(): number {
+        return this._enemies.filter(enemy => enemy._isActive).length;
     }
 }

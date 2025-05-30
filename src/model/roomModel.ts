@@ -4,7 +4,6 @@ import { FloorModel } from "./floorModel";
 import { RoofModel } from "./roofModel";
 import { WallModel } from "./wallModel";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { int } from "@babylonjs/core/types";
 
 export class RoomModel{
 
@@ -21,15 +20,18 @@ export class RoomModel{
     };
     public readonly position: Vector3;
     public readonly type: "is_normal" | "is_boss";
+    private completed: boolean;
     public static readonly MAX_DOORS = 4;
     public static readonly IS_NORMAL = "is_normal";
     public static readonly IS_BOSS = "is_boss";
+
 
     constructor(name: string, size: Vector3, position: Vector3, type: "is_normal" | "is_boss") {
         this.name = name;
         this.size = size;
         this.position = position;
         this.type = type;
+        this.completed = false;
         const wallColor = new Color3(0.5, 0.5, 0.5);
         this.walls[DoorModel.NORTH] = new WallModel(
            `${this.name}_north_wall`,
@@ -76,5 +78,15 @@ export class RoomModel{
     public getDoor(direction: 0 | 1 | 2 | 3): DoorModel | null {
         return this.doors[direction];
     }
+
+    public setToCompleted(): void {
+        this.completed = true;
+    }
+
+    public isCompleted(): boolean {
+        return this.completed;
+    }
+
+
 
 }

@@ -15,8 +15,6 @@ import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 import "@babylonjs/core/Animations/animatable";
 
 import { InputController } from "./inputController";
-import { Bullet } from "../entities/player/bullet";
-import { Environment } from "../environment";
 import { RoomModel } from "../model/roomModel";
 import { Player } from "../entities/player/player";
 import { DoorModel } from "../model/doorModel";
@@ -164,18 +162,18 @@ export class PlayerController {
                 break;
         }
         doorPosition.y += PlayerController.BODY_Y_POSITION;
-        this._teleportToRoom(targetRoom, this._level, doorPosition);
-
-        this.player._canTeleport = false;
-        setTimeout(() => {
-            this.player._canTeleport = true;
-        }, PlayerController.TELEPORT_COOLDOWN_MS);
+        if(this.currentRoom.isCompleted()) {
+            this._teleportToRoom(targetRoom, this._level, doorPosition);
+            this.player._canTeleport = false;
+            setTimeout(() => {
+                this.player._canTeleport = true;
+            }, PlayerController.TELEPORT_COOLDOWN_MS);
+        }
     }
 
     private _teleportToRoom(room: RoomModel, level: Level, doorPosition: Vector3): void {
         this.player._body.disablePreStep = false;
         this.player._body.transformNode.position.copyFrom(doorPosition);
-
         level.playerEnterRoom(room);
         this.currentRoom = room;
     }

@@ -209,9 +209,9 @@ export class Level {
 
     public playerEnterRoom(room: RoomModel): void {
         this._environment.generateRoom(room); // Dynamically generate the room when the player enters
-
+        
         // Spawn enemies in the entered room, if the EnemyManager is defined
-        if (this.enemyManager) {
+        if (this.enemyManager && !room.isCompleted()) {
             this.enemyManager.spawnEnemiesForThreat(room);
         }
     }
