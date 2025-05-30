@@ -213,21 +213,26 @@ export class RoomView {
     }
 
     public dispose(): void {
-        for (let i = 0; i < this.scene.meshes.length; i++) {
-            const mesh = this.scene.meshes[i];
+    for (let i = 0; i < this.scene.meshes.length; i++) {
+        const mesh = this.scene.meshes[i];
 
-            // Check if the mesh corresponds to the room's roof, floor, walls, or doors
-            if (
-                mesh.name === this.room.roof.name ||
-                mesh.name === this.room.floor.name ||
-                this.room.walls.some(wall => wall.name === mesh.name) ||
-                Object.values(this.room.doors).some(door => door?.name === mesh.name)
-            ) {
-                mesh.dispose();
-                i--; // Adjust index since the array is modified after disposal
-            } else {
-                // do nothing
-            }
+        // Check if the mesh corresponds to the room's roof, floor, walls, or doors
+        const isRoomMesh =
+            mesh.name === this.room.roof.name ||
+            mesh.name === this.room.floor.name ||
+            this.room.walls.some(wall => wall.name === mesh.name) ||
+            Object.values(this.room.doors).some(door => door?.name === mesh.name);
+
+        // Also dispose of imported visual meshes (e.g., *_detail, *_visual)
+        const isImportedVisual =
+            mesh.name === `${this.room.floor.name}_detail` ||
+            mesh.name.endsWith("_visual") ||
+            mesh.name.endsWith("_detail");
+
+        if (isRoomMesh || isImportedVisual) {
+            mesh.dispose();
+            i--; // Adjust index since the array is modified after disposal
         }
     }
+}
 }

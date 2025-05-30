@@ -27,7 +27,7 @@ export class PlayerController {
     public input: InputController;
     private isGrounded: boolean = false;
     private isOnSlope: boolean = false;
-    private currentRoom: RoomModel | null = null;
+    public currentRoom: RoomModel | null = null;
     private readonly _level: Level;
     public onDeath?: () => void;
     public assets: { mesh: Mesh; } | null = null;

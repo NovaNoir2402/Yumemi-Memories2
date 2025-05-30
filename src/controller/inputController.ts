@@ -34,7 +34,7 @@ export class InputController {
         this.cameraRotation = (this.inputMap["ArrowLeft"] ? -1 : 0) + (this.inputMap["ArrowRight"] ? 1 : 0); // Arrow keys for camera rotation
         // this.cameraZoom = (this.inputMap["ArrowUp"] ? 1 : 0) - (this.inputMap["ArrowDown"] ? 1 : 0); // Arrow keys for camera zoom
         // M button for debug teleport
-        this.debug = this.inputMap["m"] ? 1 : 0;
+        // this.debug = this.inputMap["m"] ? 1 : 0;
         this.shoot = this.inputMap["f"]; // F key for shooting
         
     }

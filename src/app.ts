@@ -195,7 +195,8 @@ class App {
         loseButton.height = BUTTON_HEIGHT;
         loseButton.color = BUTTON_COLOR;
         loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        guiMenu.addControl(loseButton);
+        // guiMenu.addControl(loseButton);
+        const minimap = this._createMinimap(level, player);
 
         player.onDeath = () => {
             this._goToLose();
@@ -209,6 +210,7 @@ class App {
             scene.render();
             player.update();
             enemyManager.updateEnemies();
+            minimap.update(); // Update minimap highlight
         });
 
         this._scene = scene;
@@ -285,6 +287,74 @@ class App {
         this._scene = scene;
         this._state = State.CUTSCENE;
     }
+
+    // Add this function inside your App class:
+private _createMinimap(level: Level, player: Player): { update: () => void } {
+    const minimapUI = AdvancedDynamicTexture.CreateFullscreenUI("MinimapUI");
+    const minimapContainer = new Rectangle("minimapContainer");
+    minimapContainer.width = "180px";
+    minimapContainer.height = "180px";
+    minimapContainer.thickness = 2;
+    minimapContainer.background = "rgba(0,0,0,0.5)";
+    minimapContainer.cornerRadius = 10;
+    minimapContainer.color = "white";
+    minimapContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    minimapContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    minimapContainer.top = "20px";
+    minimapContainer.left = "-20px";
+    minimapUI.addControl(minimapContainer);
+
+    const roomsGrid = level.getRooms();
+    const gridRows = roomsGrid.length;
+    const gridCols = roomsGrid[0].length;
+
+    // Store rectangles for updating highlight
+    const roomRects: Rectangle[][] = [];
+
+    for (let y = 0; y < gridRows; y++) {
+        roomRects[y] = [];
+        for (let x = 0; x < gridCols; x++) {
+            const room = roomsGrid[y][x];
+            if (!room) continue;
+
+            const roomRect = new Rectangle();
+            roomRect.width = "18px";
+            roomRect.height = "18px";
+            roomRect.thickness = 1;
+            roomRect.background = "#bbb";
+            roomRect.color = "#333";
+            roomRect.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+            roomRect.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+            // Position in grid
+            roomRect.left = `${10 + x * 20}px`;
+            roomRect.top = `${10 + y * 20}px`;
+            minimapContainer.addControl(roomRect);
+            roomRects[y][x] = roomRect;
+        }
+    }
+
+    // Return an update function to be called in the render loop
+    return {
+        update: () => {
+            let currentRoom = player.controller?.currentRoom;
+            for (let y = 0; y < gridRows; y++) {
+                for (let x = 0; x < gridCols; x++) {
+                    const rect = roomRects[y][x];
+                    if (!rect) continue;
+                    if (roomsGrid[y][x] === currentRoom) {
+                        rect.background = "#ff0";
+                        rect.thickness = 3;
+                        rect.color = "#f80";
+                    } else {
+                        rect.background = "#bbb";
+                        rect.thickness = 1;
+                        rect.color = "#333";
+                    }
+                }
+            }
+        }
+    };
+}
 }
 
 let app = new App();
