@@ -119,7 +119,7 @@ class App {
 
         // Create a popup rectangle for the start menu
         const popup = new Rectangle("startPopup");
-        popup.width = "400px";
+        popup.width = "450px";
         popup.height = "250px";
         popup.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         popup.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -131,10 +131,11 @@ class App {
 
         // Title text
         const titleText = new TextBlock();
-        titleText.text = "START MENU";
+        titleText.text = "Yumemi's Memories";
         titleText.color = "white";
         titleText.fontSize = 48;
         titleText.height = "80px";
+        titleText.top = "30px";
         titleText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
         titleText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         popup.addControl(titleText);
@@ -154,11 +155,104 @@ class App {
 
         startButton.onPointerUpObservable.add(() => {
             guiMenu.dispose();
-            this._goToGame();
+            this._goToCutScene();
         });
 
         this._scene = scene;
         this._state = State.START;
+    }
+
+    private _cutsceneDialogue = [
+        { speaker: "player", text: "Where am I...?" },
+        { speaker: "other", text: "Welcome, Yumemi." },
+        { speaker: "player", text: "Who are you?" },
+        { speaker: "other", text: "That doesn't matter right now. You must remember." },
+        { speaker: "player", text: "Remember what?" },
+        { speaker: "other", text: "Your memories are scattered. Find them." },
+        { speaker: "player", text: "This isn't real, this is just a dream..." },
+        { speaker: "player", text: "I need to wake up!" }
+    ];
+    private _cutsceneIndex = 0;
+
+    private async _goToCutScene(): Promise<void> {
+        this._scene?.dispose();
+        const scene = new Scene(this._engine);
+        scene.clearColor = SCENE_COLOR_START;
+
+        const { camera, light } = this._addCameraAndLight(scene, "CutSceneCamera");
+        camera.upperRadiusLimit = CAMERA_CUTSCENE_UPPER_RADIUS_LIMIT;
+        light.intensity = LIGHT_INTENSITY_CUTSCENE;
+
+        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("CutsceneUI");
+
+        // Dialogue box
+        const dialogueBox = new Rectangle("dialogueBox");
+        dialogueBox.width = "700px";
+        dialogueBox.height = "160px";
+        dialogueBox.cornerRadius = 20;
+        dialogueBox.thickness = 4;
+        dialogueBox.background = "rgba(30,30,30,0.95)";
+        dialogueBox.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        dialogueBox.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        dialogueBox.top = "-40px";
+        guiMenu.addControl(dialogueBox);
+
+        // Dialogue text
+        const dialogueText = new TextBlock();
+        dialogueText.text = "";
+        dialogueText.color = "white";
+        dialogueText.fontSize = 28;
+        dialogueText.textWrapping = true;
+        dialogueText.paddingLeft = "30px";
+        dialogueText.paddingRight = "30px";
+        dialogueText.paddingTop = "30px";
+        dialogueText.paddingBottom = "30px";
+        dialogueBox.addControl(dialogueText);
+
+        // Speaker name (optional)
+        const speakerText = new TextBlock();
+        speakerText.text = "";
+        speakerText.fontSize = 20;
+        speakerText.height = "30px";
+        speakerText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        speakerText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        speakerText.paddingLeft = "20px";
+        dialogueBox.addControl(speakerText);
+
+        // Helper to update dialogue
+        const updateDialogue = () => {
+            const line = this._cutsceneDialogue[this._cutsceneIndex];
+            if (!line) {
+                guiMenu.dispose();
+                this._goToGame();
+                return;
+            }
+            dialogueText.text = line.text;
+            if (line.speaker === "player") {
+                dialogueBox.color = "#2196f3";
+                dialogueBox.thickness = 4;
+                speakerText.text = "Yumemi";
+                speakerText.color = "#2196f3";
+            } else {
+                dialogueBox.color = "#111";
+                dialogueBox.thickness = 4;
+                speakerText.text = "???";
+                speakerText.color = "#fff";
+            }
+        };
+
+        // Initial dialogue
+        this._cutsceneIndex = 0;
+        updateDialogue();
+
+        // Advance on click/tap
+        dialogueBox.onPointerUpObservable.add(() => {
+            this._cutsceneIndex++;
+            updateDialogue();
+        });
+
+        this._scene = scene;
+        this._state = State.CUTSCENE;
     }
 
     private async _goToGame(): Promise<void> {
@@ -263,30 +357,6 @@ class App {
         this._state = State.LOSE;
     }
 
-    private async _goToCutScene(): Promise<void> {
-        this._scene?.dispose();
-        const scene = new Scene(this._engine);
-        scene.clearColor = SCENE_COLOR_START;
-
-        const { camera, light } = this._addCameraAndLight(scene, "CutSceneCamera");
-        camera.upperRadiusLimit = CAMERA_CUTSCENE_UPPER_RADIUS_LIMIT;
-        light.intensity = LIGHT_INTENSITY_CUTSCENE;
-
-        const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        const nextButton = Button.CreateSimpleButton("next", "NEXT");
-        nextButton.width = BUTTON_WIDTH;
-        nextButton.height = BUTTON_HEIGHT;
-        nextButton.color = BUTTON_COLOR;
-        nextButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        guiMenu.addControl(nextButton);
-
-        nextButton.onPointerUpObservable.add(() => {
-            this._goToGame();
-        });
-
-        this._scene = scene;
-        this._state = State.CUTSCENE;
-    }
 
 }
 
