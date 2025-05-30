@@ -6,6 +6,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
 import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import { Quaternion, SceneLoader, Vector3 } from "@babylonjs/core";
 
 export class RoomView {
     private readonly scene: Scene;
@@ -44,8 +45,9 @@ export class RoomView {
         roofMesh.isVisible = false;
     }
 
-    protected _createFloor(): void {
+    protected async _createFloor(): Promise<void> {
         let floor = this.room.floor;
+        // 1. Create the invisible box mesh for physics
         const floorMesh = MeshBuilder.CreateBox(
             floor.name,
             {
@@ -61,13 +63,31 @@ export class RoomView {
         floorMesh.material = material;
         floorMesh.metadata = { isGround: true };
         new PhysicsAggregate(floorMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+
+        // 2. Load the floor-detail.glb model for visuals
+        const result = await SceneLoader.ImportMeshAsync(
+            "",                // meshNames: import all meshes
+            "models/",         // rootUrl
+            "floor-detail.glb",// fileName
+            this.scene
+        );
+        const floorDetailMesh = result.meshes[0];
+        floorDetailMesh.name = `${floor.name}_detail`;
+        floorDetailMesh.scaling = floor.size.clone().divide(new Vector3(1, 1, 1));
+        floorDetailMesh.position = floor.position.clone();
+        // Optionally set material color
+        const detailMaterial = new StandardMaterial(`${floor.name}_detailMaterial`, this.scene);
+        detailMaterial.diffuseColor = floor.color;
+        floorDetailMesh.material = detailMaterial;
+        floorDetailMesh.metadata = { isGround: true };
     }
 
-    protected _createWalls(): void {
+    protected async _createWalls(): Promise<void> {
         const walls = this.room.walls;
         for (let wall of walls) {
-            const wallMesh = MeshBuilder.CreateBox(
-                wall.name,
+            // 1. Create the invisible box mesh for physics
+            const boxMesh = MeshBuilder.CreateBox(
+                `${wall.name}_physics`,
                 {
                     width: wall.size.x,
                     height: wall.size.y,
@@ -75,20 +95,38 @@ export class RoomView {
                 },
                 this.scene
             );
-            wallMesh.position = wall.position;
+            boxMesh.position = wall.position.clone();
+            boxMesh.isVisible = false;
+            boxMesh.metadata = { isObstacle: true };
+            new PhysicsAggregate(boxMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+
+            // 2. Load the wall.glb model for visuals
+            const result = await SceneLoader.ImportMeshAsync(
+                "",                // meshNames: import all meshes
+                "models/",         // rootUrl
+                "wall.glb",        // fileName
+                this.scene
+            );
+            const wallMesh = result.meshes[0];
+            wallMesh.name = wall.name;
+            wallMesh.scaling = wall.size.clone().divide(new Vector3(1, 1, 1));
+            wallMesh.position = wall.position.clone();
+            wallMesh.position.y = 0;
+
+            // Set material color
             const material = new StandardMaterial(`${wall.name}_wallMaterial`, this.scene);
             material.diffuseColor = wall.color;
             wallMesh.material = material;
             wallMesh.metadata = { isObstacle: true };
-            new PhysicsAggregate(wallMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
         }
     }
 
-    protected _setDoors(): void {
+    protected async _setDoors(): Promise<void> {
         let doors = this.room.doors;
         for (let dir = 0; dir < RoomModel.MAX_DOORS; dir++) {
             if (doors[dir] != null) {
                 let door = doors[dir];
+                // 1. Create the invisible box mesh for physics
                 const doorMesh = MeshBuilder.CreateBox(
                     door.name,
                     {
@@ -99,11 +137,57 @@ export class RoomView {
                     this.scene
                 );
                 doorMesh.position = door.position;
+                doorMesh.isVisible = false;
                 doorMesh.metadata = { isDoor: true, connectedRoom: door.connectedRoom, direction: dir };
                 const material = new StandardMaterial(`${door.name}_${dir}_doorMaterial`, this.scene);
                 material.diffuseColor = door.color;
                 doorMesh.material = material;
                 new PhysicsAggregate(doorMesh, PhysicsShapeType.BOX, { mass: 0 }, this.scene);
+
+                // 2. Load the gate.glb model for visuals
+                const result = await SceneLoader.ImportMeshAsync(
+                    "",
+                    "models/",
+                    "gate.glb",
+                    this.scene
+                );
+                const gateMesh = result.meshes[0];
+                gateMesh.name = `${door.name}_visual`;
+                // gateMesh.scaling = door.size.clone().divide(new Vector3(1, 1, 1));
+                // The scaling will always be the same, so we can use the same scaling for the gate
+                gateMesh.scaling = new Vector3(10, 10, 10);
+
+                gateMesh.position = door.position.clone();
+                gateMesh.position.y = 0; // Align with floor
+
+                // Depending on the direction, rotate the gate
+                let rotationY = 0;
+                switch (dir) {
+                    case 0: // NORTH
+                        rotationY = 0;
+                        break;
+                    case 1: // SOUTH
+                        rotationY = Math.PI;
+                        break;
+                    case 2: // EAST
+                        rotationY = -Math.PI / 2;
+                        break;
+                    case 3: // WEST
+                        rotationY = Math.PI / 2;
+                        break;
+                }
+                gateMesh.rotationQuaternion = Quaternion.FromEulerAngles(0, rotationY, 0);
+
+                // Stop all animations on the imported gate
+                if (result.animationGroups) {
+                    result.animationGroups.forEach(group => group.stop());
+                }
+
+                // Optionally set material color
+                const gateMaterial = new StandardMaterial(`${door.name}_gateMaterial`, this.scene);
+                gateMaterial.diffuseColor = door.color;
+                gateMesh.material = gateMaterial;
+                gateMesh.metadata = { isDoor: true, connectedRoom: door.connectedRoom, direction: dir };
             }
         }
     }

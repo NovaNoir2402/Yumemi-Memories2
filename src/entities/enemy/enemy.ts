@@ -101,6 +101,8 @@ export class Enemy extends Entity {
         this._isActive = false;
         this._mesh.setEnabled(false); // Cache le mesh
         this._body.setLinearVelocity(Vector3.Zero()); // Arrête le mouvement
+        // Turn off collision
+        this._body.setCollisionCallbackEnabled(false);
         console.log(`${this.name} has died`);
     }
 }

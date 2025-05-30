@@ -106,7 +106,7 @@ export class PlayerView {
                 this.camera.alpha -= event.movementX * sensitivity;
                 this.camera.beta -= event.movementY * sensitivity;
                 // Clamp beta to avoid flipping
-                this.camera.beta = Math.max(0.5, Math.min(Math.PI / 2.5, this.camera.beta));
+                this.camera.beta = Math.max(0.25, Math.min(Math.PI / 2, this.camera.beta));
             }
         };
         canvas.addEventListener("mousemove", this._onMouseMove);
