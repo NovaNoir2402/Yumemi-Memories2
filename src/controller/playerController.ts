@@ -32,7 +32,7 @@ export class PlayerController {
     private isGrounded: boolean = false;
     private isOnSlope: boolean = false;
     public currentRoom: RoomModel | null = null;
-    private readonly _level: Level;
+    public readonly _level: Level;
     public onDeath?: () => void;
     public assets: { mesh: AbstractMesh; } | null = null;
     public player: Player;
@@ -217,9 +217,14 @@ export class PlayerController {
     private _teleportToRoom(room: RoomModel, level: Level, doorPosition: Vector3): void {
         this.player._body.disablePreStep = false;
         this.player._body.transformNode.position.copyFrom(doorPosition);
+        if (this.currentRoom) {
+            this.currentRoom.IS_CLEARED = true; // Mark the current room as cleared
+        }
 
         level.playerEnterRoom(room);
         this.currentRoom = room;
+        // Trigger minimap update
+        this.player.view?.updateMinimap();
     }
 
     public update(): void {
@@ -256,23 +261,23 @@ export class PlayerController {
             this.player._weapon._shootBullet();
         }
         // --- Character model rotation to face camera direction ---
-    if (this.assets?.mesh && this.player.view?.camera) {
-        // Get the camera's forward direction, ignore Y
-        const camForward = this.player.view.camera.getForwardRay().direction.clone();
-        camForward.y = 0;
-        camForward.normalize();
+        if (this.assets?.mesh && this.player.view?.camera) {
+            // Get the camera's forward direction, ignore Y
+            const camForward = this.player.view.camera.getForwardRay().direction.clone();
+            camForward.y = 0;
+            camForward.normalize();
 
-        // If the direction is valid, rotate the mesh
-        if (camForward.lengthSquared() > 0.0001) {
-            // Babylon's FromLookDirectionLH expects forward and up
-            const targetQuat = Quaternion.FromLookDirectionLH(camForward, Vector3.Up());
-            this.assets.mesh.rotationQuaternion = Quaternion.Slerp(
-                this.assets.mesh.rotationQuaternion ?? Quaternion.Identity(),
-                targetQuat,
-                0.2 // Smoothing factor, adjust as needed
-            );
+            // If the direction is valid, rotate the mesh
+            if (camForward.lengthSquared() > 0.0001) {
+                // Babylon's FromLookDirectionLH expects forward and up
+                const targetQuat = Quaternion.FromLookDirectionLH(camForward, Vector3.Up());
+                this.assets.mesh.rotationQuaternion = Quaternion.Slerp(
+                    this.assets.mesh.rotationQuaternion ?? Quaternion.Identity(),
+                    targetQuat,
+                    0.2 // Smoothing factor, adjust as needed
+                );
+            }
         }
-    }
     }
 
     private _applyMovement(direction: Vector3): void {

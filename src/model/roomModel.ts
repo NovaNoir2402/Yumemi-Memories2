@@ -24,6 +24,7 @@ export class RoomModel{
     public static readonly MAX_DOORS = 4;
     public static readonly IS_NORMAL = "is_normal";
     public static readonly IS_BOSS = "is_boss";
+    public IS_CLEARED = false;
 
 
     constructor(name: string, size: Vector3, position: Vector3, type: "is_normal" | "is_boss") {

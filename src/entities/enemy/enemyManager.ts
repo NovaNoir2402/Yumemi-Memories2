@@ -27,8 +27,9 @@ export class EnemyManager {
     public async spawnEnemiesForThreat(room: RoomModel): Promise<void> {
         let remainingThreat = this.threatRating;
         const chosenEnemies: Enemy[] = [];
+        const MAX_ENEMIES = 10;
 
-        while (remainingThreat > 0) {
+        while (remainingThreat > 0 && chosenEnemies.length < MAX_ENEMIES) {
             // Pick a random enemy type
             const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
             const spawnPos = this._getRandomSpawnPosition(room);
