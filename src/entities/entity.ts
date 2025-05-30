@@ -14,10 +14,12 @@ export abstract class Entity extends TransformNode {
     public _mesh: Mesh;
     public _body: PhysicsBody;
     public _isLethal: boolean;
+    public _isLethalPlayer: boolean;
 
     constructor(name: string, scene: Scene) {
         super(name, scene);
         this._isLethal = false;
+        this._isLethalPlayer = false;
     }
 
     public _initPhysicsMesh(

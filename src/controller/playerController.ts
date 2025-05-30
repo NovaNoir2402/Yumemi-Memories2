@@ -115,7 +115,7 @@ export class PlayerController {
             if (!otherTransform) return;
         
             const entity = otherTransform.metadata?.entity;
-            if (entity && entity._isLethal) {
+            if (entity && entity._isLethal && entity._isLethalPlayer) {
                 const damage = (entity as any).damage ?? 10;
                 this.player.takeDamage(damage);
             }

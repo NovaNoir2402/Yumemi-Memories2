@@ -25,6 +25,7 @@ export class Enemy extends Entity {
         this._aiBehavior = this._defaultBehavior.bind(this);
         this._initialize(spawnPosition);
         this._isLethal = true;
+        this._isLethalPlayer = true; // Enemies can damage players
         this.damage = damage;
         this.health = health;
     }
