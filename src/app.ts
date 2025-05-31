@@ -435,9 +435,12 @@ class App {
         };
 
         this._engine.runRenderLoop(() => {
+
             scene.render();
-            player.update();
-            enemyManager.updateEnemies();
+            if (this._state === State.GAME) {
+                player.update();
+                enemyManager.updateEnemies();
+            }
             if (this._state !== State.WIN) {
                 checkWin();
             }
