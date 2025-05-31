@@ -10,21 +10,27 @@ export class ShockwaveEnemy extends Enemy {
     private _jumpStrength: number = 10;
     private _currentShockwave: Mesh | null = null;
     private _showwaveDamage: number = 20;
+    public override threatLevel: number = 3;
     private _model: any;
 
     constructor(scene: Scene, player: any, spawnPosition: Vector3) {
-        super("shockwaveEnemy", scene, player, spawnPosition, 5, 200);
+        super("Heavy Slime", scene, player, spawnPosition, 5, 200);
         this._initVisual();
         this._isActive = true;
+
+        // Increase hitbox size by scaling the mesh BEFORE physics impostor/body is created
+        if (this._mesh?.scaling) {
+            this._mesh.scaling = this._mesh.scaling.multiplyByFloats(1.3, 1.3, 1.3);
+        }
     }
 
     private _initVisual(): void {
-        SceneLoader.ImportMeshAsync(null, "./models/", "PSlime.glb", this._scene).then((result) => {
+        SceneLoader.ImportMeshAsync(null, "./models/", "BigSlime.glb", this._scene).then((result) => {
             const model = result.meshes[0];
             model.name = "shockwaveVisual";
             model.parent = this._mesh;
             model.isPickable = false;
-            model.scaling = new Vector3(0.01, 0.01, 0.01);
+            model.scaling = new Vector3(0.013, 0.013, 0.013); // 0.01 * 1.3
             model.position = new Vector3(0, 0, -1);
             this._mesh.isVisible = false;
             this._model = model;

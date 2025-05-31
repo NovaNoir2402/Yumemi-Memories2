@@ -1,5 +1,5 @@
 import { FreeCamera, Vector3, Scene, MeshBuilder, Mesh, Quaternion } from "@babylonjs/core";
-import { AdvancedDynamicTexture, Rectangle, Control, TextBlock, StackPanel, Button, Grid } from "@babylonjs/gui";
+import { AdvancedDynamicTexture, Rectangle, Control, TextBlock, StackPanel, Button, Grid, Image } from "@babylonjs/gui";
 import { Player } from "../entities/player/player";
 import { HealingItem } from "../entities/player/itemTypes/healingItem";
 
@@ -37,6 +37,18 @@ export class PlayerView {
     private selectedInventoryIndex: number = 0;
     private inventorySlots: Rectangle[] = [];
 
+    private lastHitEnemyName: string | null = null;
+    private lastHitEnemyHP: number | null = null;
+    private lastHitEnemyMaxHP: number | null = null;
+    private lastHitEnemyBarBackground: Rectangle;
+    private lastHitEnemyBarForeground: Rectangle;
+    private lastHitEnemyLabel: TextBlock;
+
+    private damageFlashRect: Rectangle | null = null;
+
+    private static activeNotifications: TextBlock[] = [];
+    private static NOTIFICATION_SPACING = 40; // px
+
     constructor(player: Player, scene: Scene) {
         this.player = player;
         this.scene = scene;
@@ -48,7 +60,7 @@ export class PlayerView {
         // --- ENEMY LEFT HUD ---
         this.enemyLeftContainer = new Rectangle();
         this.enemyLeftContainer.width = "320px";
-        this.enemyLeftContainer.height = "70px";
+        this.enemyLeftContainer.height = "100px";
         this.enemyLeftContainer.thickness = 0;
         this.enemyLeftContainer.background = "transparent";
         this.enemyLeftContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -73,6 +85,35 @@ export class PlayerView {
         this.enemyLeftSubText.text = "Doors are locked!";
         this.enemyLeftSubText.height = "24px";
         enemyStack.addControl(this.enemyLeftSubText);
+
+        // Enemy last hit display
+        this.lastHitEnemyLabel = new TextBlock();
+        this.lastHitEnemyLabel.fontSize = 18;
+        this.lastHitEnemyLabel.color = "#fff";
+        this.lastHitEnemyLabel.text = "";
+        this.lastHitEnemyLabel.height = "24px";
+        enemyStack.addControl(this.lastHitEnemyLabel);
+
+        // Enemy HP bar background
+        this.lastHitEnemyBarBackground = new Rectangle();
+        this.lastHitEnemyBarBackground.width = "200px";
+        this.lastHitEnemyBarBackground.height = "16px";
+        this.lastHitEnemyBarBackground.color = "white";
+        this.lastHitEnemyBarBackground.background = "gray";
+        this.lastHitEnemyBarBackground.thickness = 1;
+        // Center the bar horizontally
+        this.lastHitEnemyBarBackground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        enemyStack.addControl(this.lastHitEnemyBarBackground);
+
+        // Enemy HP bar foreground
+        this.lastHitEnemyBarForeground = new Rectangle();
+        this.lastHitEnemyBarForeground.width = "100%";
+        this.lastHitEnemyBarForeground.height = "100%";
+        this.lastHitEnemyBarForeground.background = "red";
+        // Center the foreground inside the background
+        this.lastHitEnemyBarForeground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.lastHitEnemyBarForeground.thickness = 0;
+        this.lastHitEnemyBarBackground.addControl(this.lastHitEnemyBarForeground);
 
         // Conteneur principal
         const healthContainer = new Rectangle();
@@ -137,6 +178,24 @@ export class PlayerView {
             }
         });
 
+        // Add a dynamic update for the last hit enemy display
+        this.scene.registerBeforeRender(() => {
+            if (this.lastHitEnemyName && this.lastHitEnemyHP !== null && this.lastHitEnemyMaxHP !== null) {
+                this.lastHitEnemyLabel.text = `${this.lastHitEnemyName}`;
+                const percentage = Math.max(0, this.lastHitEnemyHP) / this.lastHitEnemyMaxHP;
+                this.lastHitEnemyBarForeground.width = `${percentage * 100}%`;
+                this.lastHitEnemyBarForeground.background = percentage > 0.5 ? "#4caf50" : (percentage > 0.2 ? "#ff9800" : "#f44336");
+                this.lastHitEnemyBarBackground.isVisible = true;
+                this.lastHitEnemyBarForeground.isVisible = true;
+                this.lastHitEnemyLabel.isVisible = true;
+            } else {
+                this.lastHitEnemyLabel.text = "";
+                this.lastHitEnemyBarBackground.isVisible = false;
+                this.lastHitEnemyBarForeground.isVisible = false;
+                this.lastHitEnemyLabel.isVisible = false;
+            }
+        });
+
         // Inventory button (bottom left)
         const inventoryBtn = Button.CreateSimpleButton("inventoryBtn", "Inventory (Tab)");
         inventoryBtn.width = "160px";
@@ -161,19 +220,28 @@ export class PlayerView {
         this.setupWeaponSystem(this.scene, advancedTexture);
 
         window.addEventListener("keydown", (e) => {
-            const validKeys = ["Digit1", "Digit2", "Digit3", "Digit4","Numpad1", "Numpad2", "Numpad3", "Numpad4"];
+            const validKeys = ["Digit1", "Digit2", "Digit3", "Digit4", "Numpad1", "Numpad2", "Numpad3", "Numpad4"];
             if (validKeys.includes(e.code)) {
                 e.preventDefault();
-                this.currentWeaponIndex = parseInt(e.code.replace('Digit','').replace('Numpad','')) - 1;
+                this.currentWeaponIndex = parseInt(e.code.replace('Digit', '').replace('Numpad', '')) - 1;
                 this.updateWeaponUI();
                 this.player.switchWeapon(this.weapons[this.currentWeaponIndex]);
             }
         });
 
+        // Damage flash rectangle
+        this.damageFlashRect = new Rectangle();
+        this.damageFlashRect.width = "100%";
+        this.damageFlashRect.height = "100%";
+        this.damageFlashRect.background = "rgba(255,0,0,0.35)";
+        this.damageFlashRect.thickness = 0;
+        this.damageFlashRect.isHitTestVisible = false;
+        this.damageFlashRect.alpha = 0;
+        advancedTexture.addControl(this.damageFlashRect);
     }
 
     private setupWeaponSystem(scene, advancedTexture: AdvancedDynamicTexture): void {
-        const weapons =  ["pistol", "sniper", "shotgun", "auto"];
+        const weapons = ["pistol", "sniper", "shotgun", "auto"];
 
         const weaponUIContainer = new StackPanel();
         weaponUIContainer.width = "400px";
@@ -300,11 +368,14 @@ export class PlayerView {
 
             if (items[i]) {
                 const item = items[i];
-                const itemText = new TextBlock();
-                itemText.text = item.name;
-                itemText.color = "white";
-                itemText.fontSize = 20;
-                slot.addControl(itemText);
+                // Use icon instead of name
+                const icon = new Image("itemIcon", `./models/textures/${item.iconName}`);
+                icon.width = "48px";
+                icon.height = "48px";
+                icon.stretch = Image.STRETCH_UNIFORM;
+                icon.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                icon.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+                slot.addControl(icon);
 
                 let lastClick = 0;
                 slot.onPointerUpObservable.add(() => {
@@ -334,37 +405,37 @@ export class PlayerView {
 
         // Keyboard navigation
         const onKeyDown = (e: KeyboardEvent) => {
-        if (!this.inventoryVisible) return;
-        let row = Math.floor(this.selectedInventoryIndex / 3);
-        let col = this.selectedInventoryIndex % 3;
-        if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.code)) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        if (e.code === "ArrowRight") {
-            col = (col + 1) % 3;
-        } else if (e.code === "ArrowLeft") {
-            col = (col + 2) % 3;
-        } else if (e.code === "ArrowDown") {
-            row = (row + 1) % 2;
-        } else if (e.code === "ArrowUp") {
-            row = (row + 1) % 2;
-        } else if (e.code === "Enter") {
-            const itemsArr = Object.values(this.player.inventory.getItems());
-            const item = itemsArr[this.selectedInventoryIndex];
-            if (item && item.use && item.use(this.player)) {
-                this.player.inventory.removeItem(item.name);
-                this.closeInventory();
+            if (!this.inventoryVisible) return;
+            let row = Math.floor(this.selectedInventoryIndex / 3);
+            let col = this.selectedInventoryIndex % 3;
+            if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.code)) {
+                e.preventDefault();
+                e.stopPropagation();
             }
-        } else if (e.code === "Tab" || e.code === "Escape") {
-            this.closeInventory();
-            return;
-        } else {
-            return;
-        }
-        this.selectedInventoryIndex = row * 3 + col;
-        updateHighlight();
-    };
+            if (e.code === "ArrowRight") {
+                col = (col + 1) % 3;
+            } else if (e.code === "ArrowLeft") {
+                col = (col + 2) % 3;
+            } else if (e.code === "ArrowDown") {
+                row = (row + 1) % 2;
+            } else if (e.code === "ArrowUp") {
+                row = (row + 1) % 2;
+            } else if (e.code === "Enter") {
+                const itemsArr = Object.values(this.player.inventory.getItems());
+                const item = itemsArr[this.selectedInventoryIndex];
+                if (item && item.use && item.use(this.player)) {
+                    this.player.inventory.removeItem(item.name);
+                    this.closeInventory();
+                }
+            } else if (e.code === "Tab" || e.code === "Escape") {
+                this.closeInventory();
+                return;
+            } else {
+                return;
+            }
+            this.selectedInventoryIndex = row * 3 + col;
+            updateHighlight();
+        };
         window.addEventListener("keydown", onKeyDown);
 
         // Remove listener on close
@@ -521,13 +592,61 @@ export class PlayerView {
         notif.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         notif.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         notif.paddingRight = "30px";
-        notif.paddingBottom = "30px";
         notif.outlineColor = "#000";
         notif.outlineWidth = 4;
+
+        // Calculate vertical offset based on number of active notifications
+        const index = PlayerView.activeNotifications.length;
+        notif.paddingBottom = `${30 + index * PlayerView.NOTIFICATION_SPACING}px`;
+
         advancedTexture.addControl(notif);
+
+        // Track this notification
+        PlayerView.activeNotifications.push(notif);
 
         setTimeout(() => {
             advancedTexture.dispose();
+            // Remove this notification from the list
+            const idx = PlayerView.activeNotifications.indexOf(notif);
+            if (idx !== -1) {
+                PlayerView.activeNotifications.splice(idx, 1);
+                // Move up remaining notifications
+                for (let i = idx; i < PlayerView.activeNotifications.length; i++) {
+                    PlayerView.activeNotifications[i].paddingBottom = `${30 + i * PlayerView.NOTIFICATION_SPACING}px`;
+                }
+            }
         }, duration);
+    }
+
+    public showEnemyHit(name: string, hp: number, maxHp: number = 100): void {
+        this.lastHitEnemyName = name;
+        this.lastHitEnemyHP = hp;
+        this.lastHitEnemyMaxHP = maxHp;
+        setTimeout(() => {
+            if (this.lastHitEnemyName === name && this.lastHitEnemyHP === hp) {
+                this.lastHitEnemyName = null;
+                this.lastHitEnemyHP = null;
+                this.lastHitEnemyMaxHP = null;
+            }
+        }, 3000);
+    }
+
+    public flashDamage(): void {
+        if (!this.damageFlashRect) return;
+        this.damageFlashRect.alpha = 1;
+        // Fade out over 350ms
+        const fadeTime = 350;
+        const start = performance.now();
+        const animate = (now: number) => {
+            const elapsed = now - start;
+            const t = Math.min(1, elapsed / fadeTime);
+            this.damageFlashRect!.alpha = 1 - t;
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.damageFlashRect!.alpha = 0;
+            }
+        };
+        requestAnimationFrame(animate);
     }
 }

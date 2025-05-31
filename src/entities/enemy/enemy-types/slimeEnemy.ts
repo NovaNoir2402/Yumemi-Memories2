@@ -47,7 +47,7 @@ export class SlimeEnemy extends Enemy {
             const direction = this._player.position.subtract(this.position);
             direction.y = 0;
             direction.normalize();
-            const bounceVelocity = direction.scale(1.5).add(new Vector3(0, this._bounceStrength, 0));
+            const bounceVelocity = direction.scale(3).add(new Vector3(0, this._bounceStrength, 0)); // Increased from 1.5 to 3
             this._body.setLinearVelocity(bounceVelocity);
         }
     }

@@ -83,6 +83,13 @@ export class Weapon {
         const dir = this._getForwardDirection();
         new Bullet(this._scene, origin, dir, Weapon.PISTOL_DAMAGE);
 
+        // Play pistol sound
+        if (!pistolAudio) {
+            pistolAudio = new Audio("./sounds/laserSmall_000.ogg");
+            pistolAudio.volume = 0.5;
+        }
+        pistolAudio.currentTime = 0;
+        pistolAudio.play().catch(() => {});
     }
 
     /** Shotgun : plusieurs projectiles avec dispersion */
@@ -97,6 +104,13 @@ export class Weapon {
             new Bullet(this._scene, origin, dir, Weapon.SHOTGUN_DAMAGE); // dégâts réduits
         }
 
+        // Play shotgun sound
+        if (!shotgunAudio) {
+            shotgunAudio = new Audio("./sounds/laserLarge_002.ogg");
+            shotgunAudio.volume = 0.5;
+        }
+        shotgunAudio.currentTime = 0;
+        shotgunAudio.play().catch(() => {});
     }
 
     /** Sniper : tir unique très précis, dégâts élevés */
@@ -104,6 +118,14 @@ export class Weapon {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
         new Bullet(this._scene, origin, dir, Weapon.SNIPER_DAMAGE);
+
+        // Play sniper sound
+        if (!sniperAudio) {
+            sniperAudio = new Audio("./sounds/laserLarge_000.ogg");
+            sniperAudio.volume = 0.5;
+        }
+        sniperAudio.currentTime = 0;
+        sniperAudio.play().catch(() => {});
     }
 
     /** Mitraillette : tir droit mais légèrement imprécis */
@@ -112,6 +134,14 @@ export class Weapon {
         const baseDir = this._getForwardDirection();
         const dir = this._applySpread(baseDir, 10); // léger écart
         new Bullet(this._scene, origin, dir, Weapon.AUTO_DAMAGE);
+
+        // Play auto sound
+        if (!autoAudio) {
+            autoAudio = new Audio("./sounds/laserSmall_001.ogg");
+            autoAudio.volume = 0.5;
+        }
+        autoAudio.currentTime = 0;
+        autoAudio.play().catch(() => {});
     }
 
     /**
@@ -137,3 +167,8 @@ export class Weapon {
     }
 
 }
+
+let pistolAudio: HTMLAudioElement | null = null;
+let autoAudio: HTMLAudioElement | null = null;
+let sniperAudio: HTMLAudioElement | null = null;
+let shotgunAudio: HTMLAudioElement | null = null;

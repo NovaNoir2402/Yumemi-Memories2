@@ -8,6 +8,8 @@ import { Level } from "../../level";
 import { Weapon } from "./weapon";
 import { Inventory } from "./inventory";
 
+let damageAudio: HTMLAudioElement | null = null;
+
 export class Player extends Entity {
     public controller: PlayerController;
     public view: PlayerView;
@@ -58,8 +60,19 @@ export class Player extends Entity {
     public takeDamage(amount: number): void {
         if (!this._canTakeDamage) return;
 
+        // Play damage sound
+        if (!damageAudio) {
+            damageAudio = new Audio("./sounds/damage-taken.ogg");
+            damageAudio.volume = 0.5;
+        }
+        damageAudio.currentTime = 0;
+        damageAudio.play().catch(() => {});
+
         this._health -= amount;
         console.log(`Player took ${amount} damage! Remaining health: ${this._health}`);
+
+        // Flash red overlay
+        this.view?.flashDamage?.();
 
         this._canTakeDamage = false;
         setTimeout(() => {

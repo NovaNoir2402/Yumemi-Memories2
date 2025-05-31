@@ -12,6 +12,11 @@ import { EnemyManager } from "./entities/enemy/enemyManager";
 import { AdvancedDynamicTexture, Button, Control, Rectangle, TextBlock } from "@babylonjs/gui";
 import { Level } from "./level";
 // Constants
+let unknownTextAudio: HTMLAudioElement | null = null;
+let reverieAudio: HTMLAudioElement | null = null;
+let adventureAudio: HTMLAudioElement | null = null;
+let winAudio: HTMLAudioElement | null = null; // Add this at the top with other audio variables
+
 const CANVAS_ID = "gameCanvas";
 const CAMERA_RADIUS = 10;
 const CAMERA_START_RADIUS_LIMIT = 5;
@@ -176,8 +181,16 @@ class App {
         { speaker: "player", text: "I need to wake up!" }
     ];
     private _cutsceneIndex = 0;
+    private _cutsceneTypingTimeout: number | null = null;
 
     private async _goToCutScene(): Promise<void> {
+        // Play Reverie.ogg on loop until the game starts
+        if (!reverieAudio) {
+            reverieAudio = new Audio("./sounds/Reverie.ogg");
+            reverieAudio.loop = true;
+            reverieAudio.volume = 0.7; // Optional: set volume
+            reverieAudio.play().catch(() => { /* ignore autoplay errors */ });
+        }
         this._scene?.dispose();
         const scene = new Scene(this._engine);
         scene.clearColor = SCENE_COLOR_START;
@@ -241,11 +254,57 @@ class App {
         const updateDialogue = () => {
             const line = this._cutsceneDialogue[this._cutsceneIndex];
             if (!line) {
+                // Stop sound if playing
+                if (unknownTextAudio) {
+                    unknownTextAudio.pause();
+                    unknownTextAudio.currentTime = 0;
+                }
                 guiMenu.dispose();
                 this._goToGame();
                 return;
             }
-            dialogueText.text = line.text;
+
+            // Typing effect
+            if (this._cutsceneTypingTimeout) {
+                clearTimeout(this._cutsceneTypingTimeout);
+                this._cutsceneTypingTimeout = null;
+            }
+            let currentLength = 0;
+            dialogueText.text = "";
+            const fullText = line.text;
+            const typingSpeed = 18; // ms per character, adjust for speed
+
+            // Play sound if ??? is speaking
+            if (line.speaker === "other") {
+                if (!unknownTextAudio) {
+                    unknownTextAudio = new Audio("./sounds/unknownText.mp3");
+                    unknownTextAudio.loop = true;
+                }
+                unknownTextAudio.currentTime = 0;
+                unknownTextAudio.play();
+            } else {
+                if (unknownTextAudio) {
+                    unknownTextAudio.pause();
+                    unknownTextAudio.currentTime = 0;
+                }
+            }
+
+            const typeNext = () => {
+                if (currentLength <= fullText.length) {
+                    dialogueText.text = fullText.slice(0, currentLength);
+                    currentLength++;
+                    this._cutsceneTypingTimeout = window.setTimeout(typeNext, typingSpeed);
+                } else {
+                    this._cutsceneTypingTimeout = null;
+                    // Stop sound when typing is done
+                    if (line.speaker === "other" && unknownTextAudio) {
+                        unknownTextAudio.pause();
+                        unknownTextAudio.currentTime = 0;
+                    }
+                }
+            };
+            typeNext();
+
             if (line.speaker === "player") {
                 dialogueBox.color = "#2196f3";
                 dialogueBox.thickness = 4;
@@ -265,8 +324,24 @@ class App {
 
         // Advance on click/tap
         dialogueBox.onPointerUpObservable.add(() => {
-            this._cutsceneIndex++;
-            updateDialogue();
+            const line = this._cutsceneDialogue[this._cutsceneIndex];
+            if (!line) return;
+            if (this._cutsceneTypingTimeout) {
+                // Finish typing immediately
+                clearTimeout(this._cutsceneTypingTimeout);
+                this._cutsceneTypingTimeout = null;
+                dialogueText.text = line.text;
+            } else {
+                // Play unknownText sound on click to advance
+
+                unknownTextAudio = new Audio("./sounds/unknownText.mp3");
+                unknownTextAudio.volume = 0.7;
+
+                unknownTextAudio.currentTime = 0;
+                unknownTextAudio.play().catch(() => { });
+                this._cutsceneIndex++;
+                updateDialogue();
+            }
         });
 
         this._scene = scene;
@@ -274,6 +349,20 @@ class App {
     }
 
     private async _goToGame(): Promise<void> {
+        // Stop Reverie.ogg if playing
+        if (reverieAudio) {
+            reverieAudio.pause();
+            reverieAudio.currentTime = 0;
+        }
+        // Play Adventure.ogg for the game
+        if (!adventureAudio) {
+            adventureAudio = new Audio("./sounds/Adventure.ogg");
+            adventureAudio.loop = true;
+            adventureAudio.volume = 0.3;
+        }
+        adventureAudio.currentTime = 0;
+        adventureAudio.play().catch(() => { });
+
         // Dispose previous scene if exists
         this._scene?.dispose();
         // Create a new scene for the game
@@ -299,6 +388,13 @@ class App {
 
         const enemyManager = new EnemyManager(scene, player);
         level.setEnemyManager(enemyManager);
+
+        // Show instructions using PlayerView
+        player.view.showNotification(
+            "Instructions: WASD to move, Space to jump, Left Click to shoot. You can not aim while shooting",
+            "#2196f3",
+            8000 // Show for 8 seconds
+        );
 
         // Track game start time
         this._gameStartTime = Date.now();
@@ -333,7 +429,11 @@ class App {
             scene.render();
             player.update();
             enemyManager.updateEnemies();
-            checkWin();
+            if (this._state !== State.WIN) {
+                checkWin();
+            }
+
+
         });
 
         this._scene = scene;
@@ -346,6 +446,14 @@ class App {
         if (this._winOverlay) {
             this._winOverlay.dispose();
         }
+
+        // Play win.ogg audio
+        if (!winAudio) {
+            winAudio = new Audio("./sounds/win.ogg");
+            winAudio.volume = 0.7;
+        }
+        winAudio.currentTime = 0;
+        winAudio.play().catch(() => { });
 
         this._winOverlay = AdvancedDynamicTexture.CreateFullscreenUI("WinUI");
 

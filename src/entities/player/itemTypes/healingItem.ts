@@ -3,6 +3,7 @@ import { Item } from "../items";
 import { Player } from "../player";
 
 export class HealingItem extends Item {
+    public readonly iconName: string = "health-potion.png";
     constructor(scene: Scene) {
         super("Healing Potion", scene);
     }

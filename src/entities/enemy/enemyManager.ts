@@ -42,27 +42,33 @@ export class EnemyManager {
             let enemy: Enemy;
             let threatLevel = 1;
 
+            // Track if a ShockwaveEnemy has already been chosen for this room
+            let shockwaveSpawned = chosenEnemies.some(e => e instanceof ShockwaveEnemy);
+
             switch (type) {
                 case "slime":
                     enemy = new SlimeEnemy(this._scene, this._player, spawnPos);
                     threatLevel = enemy.threatLevel;
                     break;
-                    
+
                 case "shockWave":
-                    enemy = new ShockwaveEnemy(this._scene, this._player, spawnPos);
-                    threatLevel = enemy.threatLevel;
-                    break;
+                    if (remainingThreat > 3) {
+                        enemy = new ShockwaveEnemy(this._scene, this._player, spawnPos);
+                        threatLevel = enemy.threatLevel;
+                        break;
+                    }
+                    continue;
                 //case "orc":
-                    // enemy = new OrcEnemy(this._scene, this._player, spawnPos);
-                    // threatLevel = enemy.threatLevel;
-                    // break;
+                // enemy = new OrcEnemy(this._scene, this._player, spawnPos);
+                // threatLevel = enemy.threatLevel;
+                // break;
                 // Add more cases for other enemy types
                 default:
                     console.warn(`Unknown enemy type: ${type}`);
                     continue;
             }
 
-            if (threatLevel > remainingThreat) continue;
+            // if (threatLevel > remainingThreat) continue;
 
             chosenEnemies.push(enemy);
             remainingThreat -= threatLevel;
