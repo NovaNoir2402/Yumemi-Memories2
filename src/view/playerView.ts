@@ -369,7 +369,7 @@ export class PlayerView {
             if (items[i]) {
                 const item = items[i];
                 // Use icon instead of name
-                const icon = new Image("itemIcon", `./models/textures/${item.iconName}`);
+                const icon = new Image("itemIcon", `./icons/${item.iconName}`);
                 icon.width = "48px";
                 icon.height = "48px";
                 icon.stretch = Image.STRETCH_UNIFORM;
