@@ -44,7 +44,7 @@ export class Player extends Entity {
         this.view._setupCamera();
         this.view._setupHUD();
 
-        this._weapon = new Weapon(scene,"pistol",this);
+        this._weapon = new Weapon(scene,"basic",this);
         this.inventory = new Inventory(6);
     }
 

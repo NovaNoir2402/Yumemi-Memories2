@@ -19,10 +19,10 @@ export class Weapon {
 
     private _cooldown;
     // private static readonly BULLET_DAMAGE = 30;
-    private static readonly PISTOL_DAMAGE = 30;
-    private static readonly SHOTGUN_DAMAGE = 15;
-    private static readonly SNIPER_DAMAGE = 100;
-    private static readonly AUTO_DAMAGE = 5;
+    private static readonly basic_DAMAGE = 30;
+    private static readonly burst_DAMAGE = 15;
+    private static readonly focus_DAMAGE = 100;
+    private static readonly rapid_DAMAGE = 5;
 
     constructor(scene: Scene, bulletStyle: string, player: Player) {
         this._scene = scene;
@@ -41,23 +41,23 @@ export class Weapon {
 
     private shoot(weaponType: string): void {
         switch (weaponType) {
-            case "pistol":
-                this._shootPistol();
+            case "basic":
+                this._shootbasic();
                 break;
-            case "shotgun":
-                this._shootShotgun();
+            case "burst":
+                this._shootburst();
                 this._cooldown = 750;
                 break;
-            case "sniper":
-                this._shootSniper();
+            case "focus":
+                this._shootfocus();
                 this._cooldown = 1000;
                 break;
-            case "auto":
-                this._shootAuto();
+            case "rapid":
+                this._shootrapid();
                 this._cooldown = 100;
                 break;
             default:
-                this._shootPistol(); // fallback
+                this._shootbasic(); // fallback
                 break;
         }
     }
@@ -77,23 +77,23 @@ export class Weapon {
         return this.player.view.camera.getForwardRay().direction;
     }
 
-    /** Pistolet : tir droit, unique */
-    private _shootPistol(): void {
+    /** basicet : tir droit, unique */
+    private _shootbasic(): void {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
-        new Bullet(this._scene, origin, dir, Weapon.PISTOL_DAMAGE);
+        new Bullet(this._scene, origin, dir, Weapon.basic_DAMAGE);
 
-        // Play pistol sound
-        if (!pistolAudio) {
-            pistolAudio = new Audio("./sounds/laserSmall_000.ogg");
-            pistolAudio.volume = 0.5;
+        // Play basic sound
+        if (!basicAudio) {
+            basicAudio = new Audio("./sounds/laserSmall_000.ogg");
+            basicAudio.volume = 0.5;
         }
-        pistolAudio.currentTime = 0;
-        pistolAudio.play().catch(() => {});
+        basicAudio.currentTime = 0;
+        basicAudio.play().catch(() => {});
     }
 
-    /** Shotgun : plusieurs projectiles avec dispersion */
-    private _shootShotgun(): void {
+    /** burst : plusieurs projectiles avec dispersion */
+    private _shootburst(): void {
         const origin = this._getShootOrigin();
         const baseDir = this._getForwardDirection();
         const spreadAngle = 20; // degrés
@@ -101,47 +101,47 @@ export class Weapon {
 
         for (let i = 0; i < pellets; i++) {
             const dir = this._applySpread(baseDir, spreadAngle);
-            new Bullet(this._scene, origin, dir, Weapon.SHOTGUN_DAMAGE); // dégâts réduits
+            new Bullet(this._scene, origin, dir, Weapon.burst_DAMAGE); // dégâts réduits
         }
 
-        // Play shotgun sound
-        if (!shotgunAudio) {
-            shotgunAudio = new Audio("./sounds/laserLarge_002.ogg");
-            shotgunAudio.volume = 0.5;
+        // Play burst sound
+        if (!burstAudio) {
+            burstAudio = new Audio("./sounds/laserLarge_002.ogg");
+            burstAudio.volume = 0.5;
         }
-        shotgunAudio.currentTime = 0;
-        shotgunAudio.play().catch(() => {});
+        burstAudio.currentTime = 0;
+        burstAudio.play().catch(() => {});
     }
 
-    /** Sniper : tir unique très précis, dégâts élevés */
-    private _shootSniper(): void {
+    /** focus : tir unique très précis, dégâts élevés */
+    private _shootfocus(): void {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
-        new Bullet(this._scene, origin, dir, Weapon.SNIPER_DAMAGE);
+        new Bullet(this._scene, origin, dir, Weapon.focus_DAMAGE);
 
-        // Play sniper sound
-        if (!sniperAudio) {
-            sniperAudio = new Audio("./sounds/laserLarge_000.ogg");
-            sniperAudio.volume = 0.5;
+        // Play focus sound
+        if (!focusAudio) {
+            focusAudio = new Audio("./sounds/laserLarge_000.ogg");
+            focusAudio.volume = 0.5;
         }
-        sniperAudio.currentTime = 0;
-        sniperAudio.play().catch(() => {});
+        focusAudio.currentTime = 0;
+        focusAudio.play().catch(() => {});
     }
 
     /** Mitraillette : tir droit mais légèrement imprécis */
-    private _shootAuto(): void {
+    private _shootrapid(): void {
         const origin = this._getShootOrigin();
         const baseDir = this._getForwardDirection();
         const dir = this._applySpread(baseDir, 10); // léger écart
-        new Bullet(this._scene, origin, dir, Weapon.AUTO_DAMAGE);
+        new Bullet(this._scene, origin, dir, Weapon.rapid_DAMAGE);
 
-        // Play auto sound
-        if (!autoAudio) {
-            autoAudio = new Audio("./sounds/laserSmall_001.ogg");
-            autoAudio.volume = 0.5;
+        // Play rapid sound
+        if (!rapidAudio) {
+            rapidAudio = new Audio("./sounds/laserSmall_001.ogg");
+            rapidAudio.volume = 0.5;
         }
-        autoAudio.currentTime = 0;
-        autoAudio.play().catch(() => {});
+        rapidAudio.currentTime = 0;
+        rapidAudio.play().catch(() => {});
     }
 
     /**
@@ -168,7 +168,7 @@ export class Weapon {
 
 }
 
-let pistolAudio: HTMLAudioElement | null = null;
-let autoAudio: HTMLAudioElement | null = null;
-let sniperAudio: HTMLAudioElement | null = null;
-let shotgunAudio: HTMLAudioElement | null = null;
+let basicAudio: HTMLAudioElement | null = null;
+let rapidAudio: HTMLAudioElement | null = null;
+let focusAudio: HTMLAudioElement | null = null;
+let burstAudio: HTMLAudioElement | null = null;

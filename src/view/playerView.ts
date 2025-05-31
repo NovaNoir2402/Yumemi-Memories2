@@ -14,7 +14,7 @@ export class PlayerView {
     private hud: AdvancedDynamicTexture;
     private healthBar: Rectangle;
     private healthText: TextBlock;
-    private weapons: string[] = ["pistol", "sniper", "shotgun", "auto"];
+    private weapons: string[] = ["basic", "focus", "burst", "rapid"];
     private currentWeaponIndex: number = 0;
     private weaponBoxes: Rectangle[] = [];
 
@@ -241,7 +241,7 @@ export class PlayerView {
     }
 
     private setupWeaponSystem(scene, advancedTexture: AdvancedDynamicTexture): void {
-        const weapons = ["pistol", "sniper", "shotgun", "auto"];
+        const weapons = ["basic", "focus", "burst", "rapid"];
 
         const weaponUIContainer = new StackPanel();
         weaponUIContainer.width = "400px";

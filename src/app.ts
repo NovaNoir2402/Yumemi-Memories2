@@ -193,7 +193,7 @@ class App {
             reverieAudio = new Audio("./sounds/Reverie.ogg");
             reverieAudio.loop = true;
             reverieAudio.volume = 0.7; // Optional: set volume
-            reverieAudio.play().catch(() => { /* ignore autoplay errors */ });
+            reverieAudio.play().catch(() => { /* ignore rapidplay errors */ });
         }
         this._scene?.dispose();
         const scene = new Scene(this._engine);
