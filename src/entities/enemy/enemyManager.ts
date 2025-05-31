@@ -58,10 +58,13 @@ export class EnemyManager {
                         break;
                     }
                     continue;
-                //case "orc":
-                // enemy = new OrcEnemy(this._scene, this._player, spawnPos);
-                // threatLevel = enemy.threatLevel;
-                // break;
+                case "orc":
+                    if (remainingThreat > 2) {
+                        enemy = new OrcEnemy(this._scene, this._player, spawnPos);
+                        threatLevel = enemy.threatLevel;
+                        break;
+                    }
+                    continue;
                 // Add more cases for other enemy types
                 default:
                     console.warn(`Unknown enemy type: ${type}`);
