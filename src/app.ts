@@ -178,7 +178,11 @@ class App {
         { speaker: "player", text: "Remember what?" },
         { speaker: "other", text: "Your memories are scattered. Find them." },
         { speaker: "player", text: "This isn't real, this is just a dream..." },
-        { speaker: "player", text: "I need to wake up!" }
+        { speaker: "player", text: "I need to wake up!" },
+        { speaker: "other", text: "I see... You are still not ready, then be careful, monsters are about." },
+        { speaker: "player", text: "M-monsters? What am I going to do...?" },
+        { speaker: "other", text: "You must fight them! This is your dream, your imagination is the greatest weapon." },
+
     ];
     private _cutsceneIndex = 0;
     private _cutsceneTypingTimeout: number | null = null;
@@ -358,7 +362,7 @@ class App {
         if (!adventureAudio) {
             adventureAudio = new Audio("./sounds/Adventure.ogg");
             adventureAudio.loop = true;
-            adventureAudio.volume = 0.3;
+            adventureAudio.volume = 0.2;
         }
         adventureAudio.currentTime = 0;
         adventureAudio.play().catch(() => { });
@@ -391,7 +395,12 @@ class App {
 
         // Show instructions using PlayerView
         player.view.showNotification(
-            "Instructions: WASD to move, Space to jump, Left Click to shoot. You can not aim while shooting",
+            "Instructions: WASD to move, Space to jump, Left Click to shoot, Number Keys to switch weapons, Tab to open Inventory.",
+            "#2196f3",
+            8000 // Show for 8 seconds
+        );
+        player.view.showNotification(
+            " You can not aim while shooting. Clear all rooms to win.",
             "#2196f3",
             8000 // Show for 8 seconds
         );
@@ -479,6 +488,17 @@ class App {
         winText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         popup.addControl(winText);
 
+        // Huge YOU WIN! text
+        const youWinText = new TextBlock();
+        youWinText.text = "YOU WIN!";
+        youWinText.color = "#ffd700";
+        youWinText.fontSize = 100;
+        youWinText.height = "120px";
+        youWinText.top = "70px";
+        youWinText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        youWinText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        popup.addControl(youWinText);
+
         // Completion time
         const completionTime = ((Date.now() - this._gameStartTime) / 1000);
         const minutes = Math.floor(completionTime / 60);
@@ -488,8 +508,8 @@ class App {
         timeText.color = "white";
         timeText.fontSize = 28;
         timeText.height = "50px";
-        timeText.top = "70px";
-        timeText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        timeText.top = "170px";
+        timeText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
         timeText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         popup.addControl(timeText);
 
@@ -499,9 +519,9 @@ class App {
         storyText.color = "#fff";
         storyText.fontSize = 28;
         storyText.height = "80px";
-        storyText.top = "130px";
+        storyText.top = "230px";
         storyText.textWrapping = true;
-        storyText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        storyText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
         storyText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         popup.addControl(storyText);
 
