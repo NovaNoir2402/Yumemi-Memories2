@@ -367,7 +367,8 @@ export class PlayerView {
         grid.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
         bg.addControl(grid);
 
-        const items = this.player.inventory.getItems();
+        // --- Use new stacking inventory ---
+        const stacks = this.player.inventory.getItems();
         for (let i = 0; i < 6; i++) {
             const row = Math.floor(i / 3);
             const col = i % 3;
@@ -381,8 +382,9 @@ export class PlayerView {
             slot.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
             slot.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
 
-            if (items[i]) {
-                const item = items[i];
+            if (stacks[i]) {
+                const stack = stacks[i];
+                const item = stack.item;
                 // Use icon instead of name
                 const icon = new Image("itemIcon", `./icons/${item.iconName}`);
                 icon.width = "48px";
@@ -392,11 +394,30 @@ export class PlayerView {
                 icon.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
                 slot.addControl(icon);
 
+                // --- Stack count in bottom right ---
+                if (stack.count > 1) {
+                    const countText = new TextBlock();
+                    countText.text = `x${stack.count}`;
+                    countText.color = "#fff";
+                    countText.fontSize = 18;
+                    countText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                    countText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+                    countText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                    countText.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+                    countText.paddingRight = "8px";
+                    countText.paddingBottom = "4px";
+                    slot.addControl(countText);
+                }
+
                 let lastClick = 0;
                 slot.onPointerUpObservable.add(() => {
                     const now = Date.now();
                     if (now - lastClick < 400) {
                         if (item.use && item.use(this.player)) {
+                            // Play select_006.ogg sound
+                            const selectAudio = new Audio("./sounds/select_006.ogg");
+                            selectAudio.volume = 0.7;
+                            selectAudio.play().catch(() => { });
                             this.player.inventory.removeItem(item.name);
                             this.closeInventory();
                         }
@@ -436,10 +457,12 @@ export class PlayerView {
             } else if (e.code === "ArrowUp") {
                 row = (row + 1) % 2;
             } else if (e.code === "Enter") {
-                const itemsArr = Object.values(this.player.inventory.getItems());
-                const item = itemsArr[this.selectedInventoryIndex];
-                if (item && item.use && item.use(this.player)) {
-                    this.player.inventory.removeItem(item.name);
+                const stack = stacks[this.selectedInventoryIndex];
+                if (stack && stack.item.use && stack.item.use(this.player)) {
+                    const selectAudio = new Audio("./sounds/select_006.ogg");
+                    selectAudio.volume = 0.7;
+                    selectAudio.play().catch(() => { });
+                    this.player.inventory.removeItem(stack.item.name);
                     this.closeInventory();
                 }
             } else if (e.code === "Tab" || e.code === "Escape") {

@@ -15,7 +15,7 @@ export class OrcEnemy extends Enemy {
     public override threatLevel: number = 2;
 
     constructor(scene: Scene, player: Player, spawnPosition: Vector3) {
-        super("orc", scene, player, spawnPosition, 15, 120);
+        super("orc", scene, player, spawnPosition, 15, 160);
         this._initVisual();
         this._isActive = true;
     }
