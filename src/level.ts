@@ -43,7 +43,7 @@ export class Level {
         return this._rooms;
     }
 
-    public generateStage(numberOfRooms: number, gridSizeX: number, gridSizeY: number, roomSize: Vector3): RoomModel[][] {
+    public generateStage(numberOfRooms: number, gridSizeX: number, gridSizeY: number): RoomModel[][] {
         this._rooms = Array.from({ length: gridSizeY }, () => Array<RoomModel>(gridSizeX));
         const centerX = Math.floor(gridSizeX / 2);
         const centerY = Math.floor(gridSizeY / 2);
@@ -51,6 +51,9 @@ export class Level {
         let x = centerX;
         let y = centerY; 
         let roomPosition = new Vector3(centerX * Level.ROOMS_GAP, 0, centerY * Level.ROOMS_GAP);
+        let length = Utils.getRandomArbitrary(RoomModel.ROOM_SIZE_MIN, RoomModel.ROOM_SIZE_MAX);
+        let width = Utils.getRandomArbitrary(RoomModel.ROOM_SIZE_MIN, RoomModel.ROOM_SIZE_MAX);
+        let roomSize = new Vector3(length, RoomModel.ROOM_SIZE_HEIGHT, width)
         let currentRoom = new RoomModel(`Room_${centerX}_${centerY}`, roomSize, roomPosition, RoomModel.IS_NORMAL);
         this._rooms[centerY][centerX] = currentRoom;
         while(roomsSet < numberOfRooms) {
@@ -65,7 +68,7 @@ export class Level {
                                 this.createExit(currentRoom, nextRoom, DoorModel.NORTH);
                                 currentRoom = nextRoom;
                             } else {
-                                currentRoom = this._createNextRoom(currentRoom, x, y, roomSize, RoomModel.IS_NORMAL, DoorModel.NORTH);
+                                currentRoom = this._createNextRoom(currentRoom, x, y, RoomModel.IS_NORMAL, DoorModel.NORTH);
                                 this._rooms[y][x] = currentRoom;
                                 roomsSet++;
                             }
@@ -87,7 +90,7 @@ export class Level {
                                 this.createExit(currentRoom, nextRoom, DoorModel.SOUTH);
                                 currentRoom = nextRoom;
                             } else {
-                                currentRoom = this._createNextRoom(currentRoom, x, y, roomSize, RoomModel.IS_NORMAL, DoorModel.SOUTH);
+                                currentRoom = this._createNextRoom(currentRoom, x, y, RoomModel.IS_NORMAL, DoorModel.SOUTH);
                                 this._rooms[y][x] = currentRoom;
                                 roomsSet++;
                             }
@@ -109,7 +112,7 @@ export class Level {
                                 this.createExit(currentRoom, nextRoom, DoorModel.EAST);
                                 currentRoom = nextRoom;
                             } else {
-                                currentRoom = this._createNextRoom(currentRoom, x, y, roomSize, RoomModel.IS_NORMAL, DoorModel.EAST);
+                                currentRoom = this._createNextRoom(currentRoom, x, y, RoomModel.IS_NORMAL, DoorModel.EAST);
                                 this._rooms[y][x] = currentRoom;
                                 roomsSet++;
                             }
@@ -131,7 +134,7 @@ export class Level {
                                 this.createExit(currentRoom, nextRoom, DoorModel.WEST);
                                 currentRoom = nextRoom;
                             } else {
-                                currentRoom = this._createNextRoom(currentRoom, x, y, roomSize, RoomModel.IS_NORMAL, DoorModel.WEST);
+                                currentRoom = this._createNextRoom(currentRoom, x, y, RoomModel.IS_NORMAL, DoorModel.WEST);
                                 this._rooms[y][x] = currentRoom;
                                 roomsSet++;
                             }
@@ -154,8 +157,11 @@ export class Level {
         return this._rooms;
     }
 
-    private _createNextRoom(currentRoom: RoomModel, x: number, y: number, roomSize: Vector3, type: "is_normal" | "is_boss", direction: 0 | 1 | 2 | 3): RoomModel {
+    private _createNextRoom(currentRoom: RoomModel, x: number, y: number, type: "is_normal" | "is_boss", direction: 0 | 1 | 2 | 3): RoomModel {
         const roomPosition = new Vector3(x * Level.ROOMS_GAP, 0, y * Level.ROOMS_GAP);
+        let length = Utils.getRandomArbitrary(RoomModel.ROOM_SIZE_MIN, RoomModel.ROOM_SIZE_MAX);
+        let width = Utils.getRandomArbitrary(RoomModel.ROOM_SIZE_MIN, RoomModel.ROOM_SIZE_MAX);
+        let roomSize = new Vector3(length, RoomModel.ROOM_SIZE_HEIGHT, width)
         const nextRoom = new RoomModel(`Room_${x}_${y}`, roomSize, roomPosition, type);
         this.createExit(currentRoom, nextRoom, direction);
         return nextRoom;

@@ -50,7 +50,7 @@ enum State {
 }
 
 // App Class
-class App {
+export class App {
     private readonly _canvas: HTMLCanvasElement;
     private readonly _engine: Engine;
     private _scene: Scene;
@@ -382,7 +382,7 @@ class App {
         const level = new Level(scene);
         console.log("Début chargement niveau")
         // const rooms = level.generateSimpleRandomLevel(4, 4, ROOM_SIZE);
-        const rooms = level.generateStage(8, 4, 4, ROOM_SIZE_2);
+        const rooms = level.generateStage(8, 4, 4);
         console.log("Fin chargement");
 
 
