@@ -238,6 +238,21 @@ export class PlayerView {
         this.damageFlashRect.isHitTestVisible = false;
         this.damageFlashRect.alpha = 0;
         advancedTexture.addControl(this.damageFlashRect);
+
+        const crosshair = new TextBlock();
+        crosshair.text = "+";
+        crosshair.color = "white";
+        crosshair.fontSize = 36;
+        crosshair.outlineColor = "#000";
+        crosshair.outlineWidth = 4;
+        crosshair.width = "40px";
+        crosshair.height = "40px";
+        crosshair.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        crosshair.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        crosshair.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        crosshair.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        crosshair.top = "30px"; // Move crosshair down a little
+        advancedTexture.addControl(crosshair);
     }
 
     private setupWeaponSystem(scene, advancedTexture: AdvancedDynamicTexture): void {

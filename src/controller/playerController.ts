@@ -99,6 +99,7 @@ export class PlayerController {
         root.name = "playerVisual";
         root.parent = collisionMesh;
         root.isPickable = false;
+        root.isVisible = false; // Hide the player model
 
         // Offset the imported mesh so its feet are at the bottom of the collision cylinder
         root.position.y = -PlayerController.BODY_HEIGHT / 2;
