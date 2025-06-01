@@ -400,7 +400,12 @@ export class App {
             8000 // Show for 8 seconds
         );
         player.view.showNotification(
-            " You can not aim while shooting. Clear all rooms to win.",
+            "Weapons other than basic uses mana.",
+            "#2196f3",
+            8000 // Show for 8 seconds
+        );
+        player.view.showNotification(
+            "You can not aim while shooting. Clear all rooms to win.",
             "#2196f3",
             8000 // Show for 8 seconds
         );
