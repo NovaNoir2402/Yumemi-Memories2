@@ -1,6 +1,7 @@
 import { SceneLoader, Vector3, Quaternion, MeshBuilder, PhysicsAggregate, PhysicsShapeType, Scene } from "@babylonjs/core";
 import { Enemy } from "../enemy";
 import { Player } from "../../player/player";
+import { WeaponDamageItem } from "../../player/itemTypes/weaponDamageItem"; // Add this import
 
 export class OrcEnemy extends Enemy {
     private _orcModel: any;
@@ -11,7 +12,7 @@ export class OrcEnemy extends Enemy {
     private _chargeDirection: Vector3 = Vector3.Zero();
     private _chargeSpeed: number = 18;
     private _walkSpeed: number = 3;
-    private _friction: number = 0.98; // For slowing down after charge
+    private _friction: number = 0.99; // For slowing down after charge
     public override threatLevel: number = 2;
 
     constructor(scene: Scene, player: Player, spawnPosition: Vector3) {
@@ -122,6 +123,32 @@ export class OrcEnemy extends Enemy {
         if (this._body) {
             this._body.setAngularVelocity(Vector3.Zero());
             this._body.setAngularDamping(999);
+        }
+    }
+
+    public override takeDamage(amount: number): void {
+        this.health -= amount;
+        if (this._player?.view?.showEnemyHit) {
+            this._player.view.showEnemyHit(this.name, this.health, this.maxHealth ?? 100);
+        }
+        if (this.health <= 0) {
+            this._onOrcDeathReward();
+            this._die();
+        }
+    }
+
+    // Give a random damage up item to the player on orc death
+    private _onOrcDeathReward(): void {
+        const weaponTypes = ["basic", "focus", "burst", "rapid"] as const;
+        const randomType = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
+        const item = new WeaponDamageItem(this._scene, randomType);
+        this._player.inventory.addItem(item);
+        if (this._player.view?.showNotification) {
+            this._player.view.showNotification(
+                `You gained a ${randomType} damage up!`,
+                "#4caf50",
+                6000
+            );
         }
     }
 }

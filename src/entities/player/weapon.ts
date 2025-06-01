@@ -22,7 +22,7 @@ export class Weapon {
     private static readonly basic_DAMAGE = 30;
     private static readonly burst_DAMAGE = 15;
     private static readonly focus_DAMAGE = 100;
-    private static readonly rapid_DAMAGE = 5;
+    private static readonly rapid_DAMAGE = 10;
 
     constructor(scene: Scene, bulletStyle: string, player: Player) {
         this._scene = scene;
@@ -90,7 +90,8 @@ export class Weapon {
     private _shootbasic(): void {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
-        new Bullet(this._scene, origin, dir, Weapon.basic_DAMAGE);
+        const bonus = (this.player as any)["weaponDamageBonus"]?.basic || 0;
+        new Bullet(this._scene, origin, dir, Weapon.basic_DAMAGE + bonus);
 
         // Play basic sound
         if (!basicAudio) {
@@ -107,10 +108,11 @@ export class Weapon {
         const baseDir = this._getForwardDirection();
         const spreadAngle = 20; // degrés
         const pellets = 6;
+        const bonus = (this.player as any)["weaponDamageBonus"]?.burst || 0;
 
         for (let i = 0; i < pellets; i++) {
             const dir = this._applySpread(baseDir, spreadAngle);
-            new Bullet(this._scene, origin, dir, Weapon.burst_DAMAGE); // dégâts réduits
+            new Bullet(this._scene, origin, dir, Weapon.burst_DAMAGE + bonus); // dégâts réduits
         }
 
         // Play burst sound
@@ -126,7 +128,8 @@ export class Weapon {
     private _shootfocus(): void {
         const origin = this._getShootOrigin();
         const dir = this._getForwardDirection();
-        new Bullet(this._scene, origin, dir, Weapon.focus_DAMAGE);
+        const bonus = (this.player as any)["weaponDamageBonus"]?.focus || 0;
+        new Bullet(this._scene, origin, dir, Weapon.focus_DAMAGE + bonus);
 
         // Play focus sound
         if (!focusAudio) {
@@ -142,7 +145,8 @@ export class Weapon {
         const origin = this._getShootOrigin();
         const baseDir = this._getForwardDirection();
         const dir = this._applySpread(baseDir, 10); // léger écart
-        new Bullet(this._scene, origin, dir, Weapon.rapid_DAMAGE);
+        const bonus = (this.player as any)["weaponDamageBonus"]?.rapid || 0;
+        new Bullet(this._scene, origin, dir, Weapon.rapid_DAMAGE + bonus);
 
         // Play rapid sound
         if (!rapidAudio) {

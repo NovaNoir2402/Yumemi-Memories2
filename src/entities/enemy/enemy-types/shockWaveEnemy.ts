@@ -1,5 +1,7 @@
 import { SceneLoader, Vector3, MeshBuilder, StandardMaterial, Color3, Mesh, Scene } from "@babylonjs/core";
 import { Enemy } from "../enemy";
+import { MaxManaItem } from "../../player/itemTypes/maxManaItem";
+import { ManaRegenItem } from "../../player/itemTypes/manaRegenItem"; // Add this import
 
 export class ShockwaveEnemy extends Enemy {
     private _shockwaveCooldown: number = 0;
@@ -127,10 +129,49 @@ export class ShockwaveEnemy extends Enemy {
         }
     }
 
+    public override takeDamage(amount: number): void {
+        this.health -= amount;
+        if (this._player?.view?.showEnemyHit) {
+            this._player.view.showEnemyHit(this.name, this.health, this.maxHealth ?? 100);
+        }
+        if (this.health <= 0) {
+            this._onShockwaveDeathReward();
+            this._die();
+        }
+    }
+
+    // Give a MaxManaItem or ManaRegenItem to the player on death (50/50 chance)
+    private _onShockwaveDeathReward(): void {
+        let item;
+        if (Math.random() < 0.5) {
+            item = new MaxManaItem(this._scene);
+            this._player.inventory.addItem(item);
+            if (this._player.view?.showNotification) {
+                this._player.view.showNotification(
+                    "You gained a max mana upgrade!",
+                    "#2196f3",
+                    6000
+                );
+            }
+        } else {
+            item = new ManaRegenItem(this._scene);
+            this._player.inventory.addItem(item);
+            if (this._player.view?.showNotification) {
+                this._player.view.showNotification(
+                    "You gained a mana regen upgrade!",
+                    "#4cafef",
+                    6000
+                );
+            }
+        }
+    }
+
     public dispose(): void {
         console.log(`Disposing ShockwaveEnemy ${this.name}`);
-        this._currentShockwave.dispose();
-        this._currentShockwave = null;
+        if (this._currentShockwave) {
+            this._currentShockwave.dispose();
+            this._currentShockwave = null;
+        }
         super.dispose();
     }
 }

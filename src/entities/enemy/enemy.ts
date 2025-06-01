@@ -63,6 +63,14 @@ export class Enemy extends Entity {
 
     public update(): void {
         if (!this._isActive || !this._body) return;
+
+        // --- Kill enemy if out of bounds ---
+        if (this.position.y < -20) {
+            this.health = 0;
+            this._die();
+            return;
+        }
+
         this._aiBehavior(this, this._player);
     }
 
@@ -103,7 +111,7 @@ export class Enemy extends Entity {
         }
     }
 
-    private _die(): void {
+    protected _die(): void {
         this._isActive = false;
         this._mesh.setEnabled(false); // Cache le mesh
         this._body.setLinearVelocity(Vector3.Zero()); // Arrête le mouvement

@@ -27,7 +27,7 @@ export class Player extends Entity {
     public _canShoot: boolean = true;
 
     private _mana: number = 100;
-    private _maxMana: number = 100;
+    public _maxMana: number = 100;
 
     public onDeath?: () => void;
 
@@ -52,8 +52,9 @@ export class Player extends Entity {
 
         // Mana regen loop
         setInterval(() => {
+            const bonus = (this as any)["manaRegenBonus"] || 0;
             if (this._mana < this._maxMana) {
-                this._mana = Math.min(this._mana + 5, this._maxMana);
+                this._mana = Math.min(this._mana + 5 + bonus, this._maxMana);
             }
         }, 1000);
     }
@@ -112,5 +113,10 @@ export class Player extends Entity {
 
     public get maxMana(): number {
         return this._maxMana;
+    }
+
+    public set maxMana(value: number) {
+        this._maxMana = Math.max(100, value);
+        this.mana = Math.min(this.mana, this._maxMana); // Ensure mana doesn't exceed max
     }
 }

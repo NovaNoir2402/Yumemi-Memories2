@@ -395,7 +395,7 @@ export class App {
 
         // Show instructions using PlayerView
         player.view.showNotification(
-            "Instructions: WASD to move, Space to jump, Left Click to shoot, Number Keys to switch weapons, Tab to open Inventory.",
+            "Instructions: WASD or ZQSD to move, Space to jump, Left Click to shoot, Number Keys to switch weapons, Tab to open Inventory.",
             "#2196f3",
             8000 // Show for 8 seconds
         );
