@@ -6,12 +6,12 @@ export class OrcEnemy extends Enemy {
     private _orcModel: any;
     private _state: "walk" | "chargeup" | "charge" = "walk";
     private _chargeTimer: number = 0;
-    private _chargeDuration: number = 1.2;
+    private _chargeDuration: number = 5;
     private _chargeupTime: number = 0.7;
     private _chargeDirection: Vector3 = Vector3.Zero();
     private _chargeSpeed: number = 18;
     private _walkSpeed: number = 3;
-    private _friction: number = 0.93; // For slowing down after charge
+    private _friction: number = 0.98; // For slowing down after charge
     public override threatLevel: number = 2;
 
     constructor(scene: Scene, player: Player, spawnPosition: Vector3) {
@@ -57,7 +57,7 @@ export class OrcEnemy extends Enemy {
 
         switch (this._state) {
             case "walk":
-                if (dist < 5) {
+                if (dist < 13) {
                     this._state = "chargeup";
                     this._chargeTimer = 0;
                 } else {
