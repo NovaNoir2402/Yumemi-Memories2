@@ -26,6 +26,9 @@ export class Player extends Entity {
     public _canTeleport: boolean = true;
     public _canShoot: boolean = true;
 
+    private _mana: number = 100;
+    private _maxMana: number = 100;
+
     public onDeath?: () => void;
 
     constructor(
@@ -46,6 +49,13 @@ export class Player extends Entity {
 
         this._weapon = new Weapon(scene,"basic",this);
         this.inventory = new Inventory(6);
+
+        // Mana regen loop
+        setInterval(() => {
+            if (this._mana < this._maxMana) {
+                this._mana = Math.min(this._mana + 5, this._maxMana);
+            }
+        }, 1000);
     }
 
     public update(): void {
@@ -90,5 +100,17 @@ export class Player extends Entity {
 
     public set health(value: number) {
         this._health = value;
+    }
+
+    public get mana(): number {
+        return this._mana;
+    }
+
+    public set mana(value: number) {
+        this._mana = Math.max(0, Math.min(this._maxMana, value));
+    }
+
+    public get maxMana(): number {
+        return this._maxMana;
     }
 }

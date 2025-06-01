@@ -9,6 +9,8 @@ export class PlayerView {
 
     private healthBarBackground: Rectangle;
     private healthBarForeground: Rectangle;
+    private manaBarBackground: Rectangle;
+    private manaBarForeground: Rectangle;
 
     public camera: FreeCamera;
     private hud: AdvancedDynamicTexture;
@@ -148,6 +150,25 @@ export class PlayerView {
         this.healthBarForeground.thickness = 0;
         this.healthBarBackground.addControl(this.healthBarForeground);
 
+        // Add mana bar below health bar
+        this.manaBarBackground = new Rectangle();
+        this.manaBarBackground.width = "200px";
+        this.manaBarBackground.height = "14px";
+        this.manaBarBackground.color = "white";
+        this.manaBarBackground.background = "#224488";
+        this.manaBarBackground.thickness = 1;
+        this.manaBarBackground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.manaBarBackground.top = "4px";
+        stackPanel.addControl(this.manaBarBackground);
+
+        this.manaBarForeground = new Rectangle();
+        this.manaBarForeground.width = "100%";
+        this.manaBarForeground.height = "100%";
+        this.manaBarForeground.background = "#2196f3";
+        this.manaBarForeground.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        this.manaBarForeground.thickness = 0;
+        this.manaBarBackground.addControl(this.manaBarForeground);
+
         // Minimap
         this.createMinimap(this.player.controller._level, this.player);
 
@@ -155,6 +176,11 @@ export class PlayerView {
         this.scene.registerBeforeRender(() => {
             const percentage = Math.max(0, this.player.health) / 100;
             this.healthBarForeground.width = `${percentage * 100}%`;
+        });
+
+        this.scene.registerBeforeRender(() => {
+            const percentage = Math.max(0, this.player.mana) / this.player.maxMana;
+            this.manaBarForeground.width = `${percentage * 100}%`;
         });
 
         // --- Dynamic update for ENEMY LEFT HUD ---

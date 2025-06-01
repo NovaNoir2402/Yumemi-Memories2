@@ -45,16 +45,25 @@ export class Weapon {
                 this._shootbasic();
                 break;
             case "burst":
-                this._shootburst();
-                this._cooldown = 750;
+                if (this.player.mana >= 30) {
+                    this.player.mana -= 30;
+                    this._shootburst();
+                    this._cooldown = 750;
+                }
                 break;
             case "focus":
-                this._shootfocus();
-                this._cooldown = 1000;
+                if (this.player.mana >= 20) {
+                    this.player.mana -= 20;
+                    this._shootfocus();
+                    this._cooldown = 1000;
+                }
                 break;
             case "rapid":
-                this._shootrapid();
-                this._cooldown = 100;
+                if (this.player.mana >= 3) {
+                    this.player.mana -= 3;
+                    this._shootrapid();
+                    this._cooldown = 100;
+                }
                 break;
             default:
                 this._shootbasic(); // fallback
